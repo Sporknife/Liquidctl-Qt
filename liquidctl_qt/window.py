@@ -13,9 +13,6 @@ class Handler(QtCore.QObject):
         self.window = window_obj
         self.info = info_obj
 
-    def applyAll(self):
-        print("apply allsettings")
-
     def on_device_change(self, new_index):
         self.info.curr_dev_index = new_index
         self.DeviceChanged_signal.emit(
@@ -28,6 +25,34 @@ class Handler(QtCore.QObject):
     def multi_apply(self):
         print("multi apply")
 
+
+class DecisionDialog(QtWidgets.QDialog):
+    # if you would like to close the application
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setWindowTitle("Decisions...")
+        self.setLayout(self._layout())
+
+    def _layout(self):
+        vbox = main_widgets.VBox()
+        msg_label = main_widgets.Label(
+            "exit label",
+            "Would you like to exit the application\n(and loose your unsaved/unapplied settings) ?",
+            QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter,
+        )
+        vbox.addWidget(msg_label)
+        vbox.addWidget(self._buttons_box())
+        return vbox
+
+    def _buttons_box(self):
+        buttons = QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes
+        buttons_box = QtWidgets.QDialogButtonBox(buttons)
+        buttons_box.accepted.connect(self.accept)
+        buttons_box.rejected.connect(self.reject)
+        return buttons_box
+
+    def closeEvent(self, close_event):
+        self.reject()
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -47,6 +72,14 @@ class MainWindow(QtWidgets.QMainWindow):
         hbox.addWidget(self.info.main_right)
         central_widget.setLayout(hbox)
         return central_widget
+
+    def closeEvent(self, close_event):
+        dialog = DecisionDialog(self)
+        dialog.setModal(True)
+        if dialog.exec_():
+            close_event.accept()
+        else:
+            close_event.ignore()
 
 
 class Info:

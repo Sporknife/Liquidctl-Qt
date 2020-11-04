@@ -9,12 +9,21 @@ class Stack(QtWidgets.QFrame):
             QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Expanding,
         )
-        box = QtWidgets.QVBoxLayout()
-        box.addWidget(self.stack(pages))
-        self.setLayout(box)
+        self._style()
+        self._layout(pages)
         devChanged_signal.connect(self.set_page)
 
-    def stack(self, pages):
+    def _style(self):
+        self.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.setLineWidth(1)
+
+    def _layout(self, pages):
+        box = QtWidgets.QVBoxLayout()
+        box.addWidget(self._stacked_widget(pages))
+        self.setLayout(box)
+
+    def _stacked_widget(self, pages):
         self.stack_widget = QtWidgets.QStackedWidget()
         if pages:
             for page in pages:
@@ -31,10 +40,9 @@ class Stack(QtWidgets.QFrame):
 
 
 class Controls(main_widgets.HBox):
-    def __init__(self, multi_ctrl_to_cnct, apply_to_cnct):
+    def __init__(self, multi_ctrl_to_cnct):
         super().__init__()
         self._multi_ctrl_to_cnct = multi_ctrl_to_cnct
-        self._apply_to_cnct = apply_to_cnct
         self._layout()
 
     def _multi_control_btn(self):
@@ -42,23 +50,17 @@ class Controls(main_widgets.HBox):
             "multi_control",
             "Multi Settings",
             self._multi_ctrl_to_cnct,
+            enabled=False,
         )
-        return btn
-
-    def _multi_apply_btn(self):
-        btn = main_widgets.Button(
-            "multi_apply",
-            "Apply All",
-            self._apply_to_cnct,
-        )
+        btn.setToolTip("Configure multiple hardware devices")
+        btn.setToolTipDuration(0.5)
         return btn
 
     def _layout(self):
-        self.addWidget(self._multi_control_btn())
         self.addItem(
             main_widgets.Spacer(h_pol=QtWidgets.QSizePolicy.Expanding)
         )
-        self.addWidget(self._multi_apply_btn())
+        self.addWidget(self._multi_control_btn())
 
 
 class MainRight(QtWidgets.QWidget):
@@ -71,10 +73,12 @@ class MainRight(QtWidgets.QWidget):
         vbox = main_widgets.VBox()
         self.controls = Controls(
             self.info.main_handler.multi_settings,
-            self.info.main_handler.multi_apply,
         )
         vbox.addWidget(
-            Stack([], self.info.main_handler.DeviceChanged_signal)
+            Stack(
+                pages=[],
+                devChanged_signal=self.info.main_handler.DeviceChanged_signal,
+            )
         )
         vbox.addItem(self.controls)
         return vbox

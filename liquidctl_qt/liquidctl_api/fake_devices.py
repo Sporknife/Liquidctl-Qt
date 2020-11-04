@@ -5,10 +5,6 @@ Fake devices to test the app
 """
 
 
-def random_int():
-    return randint(100, 1000)
-
-
 class FanDevice:
     __slots__ = (
         "description",
@@ -53,15 +49,16 @@ class FanDevice:
         print("initialized: ", self.description)
 
     class device:
+        ran_int = randint(25, 100)
         hidinfo = {
             "path": b"/dev/hidraw9",
             "vendor_id": 1000,
-            "product_id": "random_int()",
+            "product_id": "ran_int",
             "serial_number": "ow;iejoigj",
-            "release_number": random_int(),
+            "release_number": ran_int,
             "manufacturer_string": "NZXT.-Inc.",
             "product_string": "NZXT USB Device",
-            "usage_page": random_int(),
-            "usage": random_int(),
-            "interface_number": random_int(),
+            "usage_page": ran_int,
+            "usage": ran_int,
+            "interface_number": ran_int,
         }
