@@ -55,6 +55,8 @@ class DeviceInfo(QtWidgets.QGridLayout):
 
 
 class MainLeft(QtWidgets.QWidget):
+    __slots__ = ("device_selector", "device_info", "info")
+
     def __init__(self, info_obj):
         super().__init__()
         self.info = info_obj

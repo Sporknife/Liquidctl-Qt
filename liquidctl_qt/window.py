@@ -5,7 +5,7 @@ from threading import Thread, Event
 
 
 class Handler(QtCore.QObject):
-    apply_all_signal = QtCore.pyqtSignal(name="apply_settings")
+    __slots__ = ("info")
     DeviceChanged_signal = QtCore.pyqtSignal(list, name="device-changed")
 
     def __init__(self, window_obj, info_obj):
@@ -45,7 +45,9 @@ class DecisionDialog(QtWidgets.QDialog):
         return vbox
 
     def _buttons_box(self):
-        buttons = QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes
+        buttons = (
+            QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes
+        )
         buttons_box = QtWidgets.QDialogButtonBox(buttons)
         buttons_box.accepted.connect(self.accept)
         buttons_box.rejected.connect(self.reject)
@@ -53,6 +55,7 @@ class DecisionDialog(QtWidgets.QDialog):
 
     def closeEvent(self, close_event):
         self.reject()
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -83,6 +86,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 class Info:
+    __slots__ = (
+        "window",
+        "curr_dev_index",
+        "liquidctl_api",
+        "devices_dict",
+        "devices_list",
+        "profile_setting_dialogs",
+        "control_device_widgets",
+        "main_handler",
+        "main_left",
+        "main_right",
+    )
+
     def __init__(self, window_obj):
         self._variables()
         self.window = window_obj
