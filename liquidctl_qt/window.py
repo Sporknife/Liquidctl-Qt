@@ -1,14 +1,12 @@
 from PyQt5 import QtWidgets, QtCore
-from ui_widgets import main_widgets, left
+from ui_widgets import main_widgets, left, right
 from liquidctl_api import liquidctl_api
 from threading import Thread, Event
 
 
 class Handler(QtCore.QObject):
     apply_all_signal = QtCore.pyqtSignal(name="apply_settings")
-    # list = [stack_page_index, updatable]
-    setDeviceSignal_left = QtCore.pyqtSignal(list, name="set-device-left")
-    setDeviceSignal_right = QtCore.pyqtSignal(name="set-device-right")
+    DeviceChanged_signal = QtCore.pyqtSignal(list, name="device-changed")
 
     def __init__(self, window_obj, info_obj):
         super().__init__()
@@ -20,8 +18,15 @@ class Handler(QtCore.QObject):
 
     def on_device_change(self, new_index):
         self.info.curr_dev_index = new_index
-        self.setDeviceSignal_left.emit(self.info.curr_dev_info)
-        self.setDeviceSignal_right.emit()
+        self.DeviceChanged_signal.emit(
+            [self.info.curr_dev_info, new_index]
+        )
+
+    def multi_settings(self):
+        print("multi settings")
+
+    def multi_apply(self):
+        print("multi apply")
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -39,6 +44,7 @@ class MainWindow(QtWidgets.QMainWindow):
         central_widget = QtWidgets.QWidget()
         hbox = main_widgets.HBox()
         hbox.addWidget(self.info.main_left)
+        hbox.addWidget(self.info.main_right)
         central_widget.setLayout(hbox)
         return central_widget
 
@@ -54,6 +60,7 @@ class Info:
         self._liquidctl_api()
         self._main()
         self._left()
+        self._right()
 
     def _liquidctl_api(self):
         self.curr_dev_index = 0
@@ -83,4 +90,4 @@ class Info:
         self.main_left = left.MainLeft(self)
 
     def _right(self):
-        pass
+        self.main_right = right.MainRight(self)

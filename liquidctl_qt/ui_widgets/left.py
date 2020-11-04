@@ -44,7 +44,7 @@ class DeviceInfo(QtWidgets.QGridLayout):
 
     @QtCore.pyqtSlot(list)
     def update_info_labels(self, info_list):
-        for i, info in enumerate(info_list):
+        for i, info in enumerate(info_list[0]):
             text = info[1]
             if isinstance(text, bytes):
                 text = text.decode()
@@ -72,7 +72,7 @@ class MainLeft(QtWidgets.QWidget):
     def _set_device_info(self):
         self.device_info = DeviceInfo(
             info_list=self.info.curr_dev_info,
-            update_singnal=self.info.main_handler.setDeviceSignal_left,
+            update_singnal=self.info.main_handler.DeviceChanged_signal,
         )
 
     def layout(self):

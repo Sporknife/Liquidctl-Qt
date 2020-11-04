@@ -2,20 +2,19 @@ from os import path
 from glob import glob
 from ui_widgets import main_widgets as widgets
 
+# from pandas import DataFrame, read_json
+# from numpy import int8 as np_int8
+
 
 class DutyProfiles:
     def __init__(self):
         self.root_path = path.dirname(path.abspath(__name__))
+        self.profiles = []  # stores pandas.DataFrame object's
 
-    @property
-    def profiles(self):
-        profiles: list = glob(path.join(self.root_path, "profiles/fan/*"))
-        return profiles
+    def load_profiles(self):
+        pass
 
-    def add_profiles(self, combobox: widgets.ComboBox = None):
-        combobox.addItems(self.profiles)
-
-    def create_profile(self, name: str, values: dict = {}):
+    def get_profiles(self):
         pass
 
 

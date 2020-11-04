@@ -10,10 +10,9 @@ class Button(QtWidgets.QPushButton):
         to_connect=None,
         font_color: str = "",
         button_color: str = "",
-        size_policy: list = [
-            QtWidgets.QSizePolicy.Preferred,
-            QtWidgets.QSizePolicy.Preferred,
-        ],
+        font_size: int = 0,
+        h_pol=QtWidgets.QSizePolicy.Preferred,
+        v_pol=QtWidgets.QSizePolicy.Preferred,
         enabled=True,
     ):
         super().__init__()
@@ -26,10 +25,14 @@ class Button(QtWidgets.QPushButton):
             style = f"color: rgb{font_color};\n"
             self.setStyleSheet(style)
         if button_color:
-            style = self.styleSheet() + f"border-color: rgb{button_color};"
+            style = (
+                self.styleSheet() + f"border-color: rgb{button_color};\n"
+            )
             self.setStyleSheet(style)
-        if size_policy:
-            self.setSizePolicy(size_policy[0], size_policy[1])
+        if font_size:
+            style = self.styleSheet() + f"font-size: {font_size}px;\n"
+            self.setStyleSheet(style)
+        self.setSizePolicy(h_pol, v_pol)
         if not enabled:
             self.setEnabled(enabled)
 
@@ -306,6 +309,7 @@ class Slider(QtWidgets.QSlider):
             to_reset_event.connect(self.reset)
 
         if not enabled:
+
             self.setEnabled(enabled)
 
     @pyqtSlot()
