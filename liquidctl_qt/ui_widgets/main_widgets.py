@@ -116,7 +116,7 @@ class HardwareWidget(QtWidgets.QFrame):
         self,
         hw_name: str,
         hw_info: list,
-        settings_btn: list,
+        settings_btn_to_cnct,
     ):
         super().__init__()
         self.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -136,12 +136,11 @@ class HardwareWidget(QtWidgets.QFrame):
                         h_pol=QtWidgets.QSizePolicy().Expanding,
                     )
                 )
-                if settings_btn[0]:
+                if settings_btn_to_cnct:
                     prof_settings = Button("Profile Settings")
-                    if settings_btn[1]:
-                        prof_settings.clicked.connect(
-                            lambda: settings_btn[1](hw_name)
-                        )
+                    prof_settings.clicked.connect(
+                        lambda: settings_btn[1](hw_name)
+                    )
                     self.addWidget(prof_settings)
 
         class HwInfo(QtWidgets.QGridLayout):
