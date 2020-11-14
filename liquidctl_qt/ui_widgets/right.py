@@ -3,31 +3,29 @@ from ui_widgets import main_widgets
 
 
 class Stack(QtWidgets.QFrame):
-    def __init__(self, pages, devChanged_signal):
+    def __init__(self, info_obj):
         super().__init__()
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Expanding,
         )
+        self.info = info_obj
         self._style()
-        self._layout(pages)
-        devChanged_signal.connect(self.set_page)
+        self._layout()
+        self.info.signals.device_changed_signal.connect(self.set_page)
 
     def _style(self):
         self.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.setLineWidth(1)
 
-    def _layout(self, pages):
+    def _layout(self):
         box = QtWidgets.QVBoxLayout()
-        box.addWidget(self._stacked_widget(pages))
+        box.addWidget(self._stacked_widget())
         self.setLayout(box)
 
-    def _stacked_widget(self, pages):
-        self.stack_widget = QtWidgets.QStackedWidget()
-        if pages:
-            for page in pages:
-                self.stack_widget.addWidget(page)
+    def _stacked_widget(self):
+        self.stack_widget = main_widgets.StackedWidget()
         return self.stack_widget
 
     def add_pages(self, pages):
@@ -68,6 +66,7 @@ class MainRight(QtWidgets.QWidget):
         super().__init__()
         self.info = info_obj
         self.setLayout(self._layout())
+        info_obj.dev_hw_inf_updater.start() # fixme: make it start updating on startup !
 
     def _layout(self):
         vbox = main_widgets.VBox()
@@ -76,8 +75,7 @@ class MainRight(QtWidgets.QWidget):
         )
         vbox.addWidget(
             Stack(
-                pages=[],
-                devChanged_signal=self.info.main_handler.DeviceChanged_signal,
+                self.info,
             )
         )
         vbox.addItem(self.controls)

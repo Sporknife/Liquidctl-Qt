@@ -79,10 +79,10 @@ class ComboBox(QtWidgets.QComboBox):
         self,
         name: str = "",
         items: list = [],
-        size_policy: list = [
-            QtWidgets.QSizePolicy.Preferred,
-            QtWidgets.QSizePolicy.Preferred,
-        ],
+        h_pol=QtWidgets.QSizePolicy.Preferred,
+        v_pol=QtWidgets.QSizePolicy.Preferred,
+        to_connect=None,
+        pass_index=False,
         to_reset_event=None,
     ):
         super().__init__()
@@ -90,8 +90,14 @@ class ComboBox(QtWidgets.QComboBox):
             self.setObjectName(name)
         if items:
             self.addItems(items)
-        if size_policy:
-            self.setSizePolicy(size_policy[0], size_policy[1])
+        self.setSizePolicy(h_pol, v_pol)
+        if to_connect:
+            if pass_value:
+                self.currentIndexChanged.connect(
+                    lambda: to_connect(self.currentIndex())
+                )
+            else:
+                self.currentIndexChanged(to_connect)
         if to_reset_event:
             to_reset_event.connect(self.reset)
 
@@ -124,11 +130,11 @@ class HardwareWidget(QtWidgets.QFrame):
         self.setLineWidth(1)
 
         class Top(HBox):
-            def __init__(self, hw_name, settings_btn: list):
+            def __init__(self, hw_name, settings_btn_to_cnct):
                 super().__init__(self)
-                self._layout(hw_name, settings_btn)
+                self._layout(hw_name, settings_btn_to_cnct)
 
-            def _layout(self, hw_name: str, to_connect):
+            def _layout(self, hw_name: str, settings_btn_to_cnct):
                 label = Label(text=hw_name, font_size=22, font_weight=600)
                 self.addWidget(label)
                 self.addItem(
@@ -139,7 +145,7 @@ class HardwareWidget(QtWidgets.QFrame):
                 if settings_btn_to_cnct:
                     prof_settings = Button("Profile Settings")
                     prof_settings.clicked.connect(
-                        lambda: settings_btn[1](hw_name)
+                        lambda: settings_btn_to_cnct(hw_name)
                     )
                     self.addWidget(prof_settings)
 
@@ -182,7 +188,7 @@ class HardwareWidget(QtWidgets.QFrame):
                     label.setText(info)
 
         vbox = QtWidgets.QVBoxLayout()
-        vbox.addItem(Top(hw_name, settings_btn))
+        vbox.addItem(Top(hw_name, settings_btn_to_cnct))
         self.hw_info_obj = HwInfo(hw_info)
         vbox.addItem(self.hw_info_obj)
         self.setLayout(vbox)
@@ -331,19 +337,13 @@ class Spacer(QtWidgets.QSpacerItem):
         super().__init__(width, height, h_pol, v_pol)
 
 
-class Stack(QtWidgets.QStackedWidget):
+class StackedWidget(QtWidgets.QStackedWidget):
     def __init__(
         self,
-        name: str = "",
         pages=[],
     ):
         super().__init__()
-        if name:
-            self.setObjectName(name)
         print("main_widgets.Stack, add animations")
-        if pages:
-            for page in pages:
-                self.addWidget(page)
 
     def set_page(self, index: int):
         self.setCurrentIndex(index)

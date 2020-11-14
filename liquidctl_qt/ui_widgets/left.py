@@ -73,7 +73,7 @@ class MainLeft(QtWidgets.QWidget):
     def _set_device_info(self):
         self.device_info = DeviceInfo(
             info_list=self.info.curr_dev_info,
-            update_singnal=self.info.main_handler.DeviceChanged_signal,
+            update_singnal=self.info.signals.device_changed_signal,
         )
 
     def layout(self):
