@@ -153,26 +153,34 @@ class HardwareWidget(QtWidgets.QFrame):
 
             def _set_labels(self, hw_info):
                 """
-                measures = (
-                    ["current", "0.5 A"],
-                    ["rpm", "100 rpm"],
+                hw_info = (
+                    ["current", 0.5, "A"],
+                    ["rpm", 100, "rpm"],
                     ...
                 )
                 """
                 for i, _hw_info in enumerate(hw_info):
-                    label = Label(text=_hw_info[0].capitalize())
-                    self.addWidget(label, i, 1)
-                    value_label = Label(
-                        text=_hw_info[1],
-                        aligment=Qt.AlignRight | Qt.AlignVCenter,
+                    self.addWidget(Label(text=_hw_info[0]), i, 1)
+                    self.addWidget(
+                        Label(
+                            text=_hw_info[1],
+                            aligment=Qt.AlignRight | Qt.AlignVCenter,
+                        ),
+                        i,
+                        2,
                     )
-                    self.addWidget(value_label, i, 2)
+                    self.addWidget(
+                        Label(
+                            text=_hw_info[2],
+                            aligment=Qt.AlignRight | Qt.AlignVCenter,
+                        ),
+                        i,
+                        3,
+                    )
 
             def update_info(self, hw_info):
                 for i, _hw_info in enumerate(hw_info):
-                    label = self.itemAtPosition(i, 2)
-                    info = _hw_info[i]
-                    label.setText(info)
+                    self.itemAtPosition(i, 2).widget().setText(_hw_info[1])
 
         vbox = QtWidgets.QVBoxLayout()
         vbox.addItem(Top(hw_name, settings_btn_to_cnct))
@@ -181,7 +189,7 @@ class HardwareWidget(QtWidgets.QFrame):
         self.setLayout(vbox)
 
     def update_hw_info(self, _hw_info):
-        self.hw_info_obj.update(_hw_info)
+        self.hw_info_obj.update_info(_hw_info)
 
 
 class HBox(QtWidgets.QHBoxLayout):
@@ -203,11 +211,17 @@ class HBox(QtWidgets.QHBoxLayout):
         """
         add widget or item
         """
-        for witem in witems:
-            if isinstance(witem, QtWidgets.QLayoutItem):
-                self.addItem(witem)
-            else:
-                self.addWidget(witem)
+        try:
+            for witem in witems:
+                self._add_witem(witem)
+        except TypeError:
+            self._add_witem(witems)  # if only one object provided
+
+    def _add_witem(self, witem):
+        if isinstance(witem, QtWidgets.QLayoutItem):
+            self.addItem(witem)
+        else:
+            self.addWidget(witem)
 
 
 class Label(QtWidgets.QLabel):
@@ -359,7 +373,7 @@ class VBox(QtWidgets.QVBoxLayout):
             for witem in witems:
                 self._add_witem(witem)
         except TypeError:
-            self._add_witem(witems)
+            self._add_witem(witems)  # if only one object provided
 
     def _add_witem(self, witem):
         if isinstance(witem, QtWidgets.QLayoutItem):

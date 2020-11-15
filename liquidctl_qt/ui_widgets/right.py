@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, QtCore
-from ui_widgets import main_widgets
+from ui_widgets import main_widgets, control
 
 
 class Stack(QtWidgets.QFrame):
@@ -22,7 +22,10 @@ class Stack(QtWidgets.QFrame):
     def _layout(self):
         box = QtWidgets.QVBoxLayout()
         self.stacked_widget = main_widgets.StackedWidget()
-        self.add_pages()
+        [
+            self.stacked_widget.addWidget(StackPage())
+            for device in self.info.devices_list
+        ]
         box.addWidget(self.stacked_widget)
         self.setLayout(box)
 
@@ -36,9 +39,13 @@ class Stack(QtWidgets.QFrame):
 
 
 class StackPage(QtWidgets.QScrollArea):
+    update_dev_hw_info = QtCore.pyqtSignal(dict, name="info-updater")
+    add_widgets_signal = QtCore.pyqtSignal(list, name="witem-adder")
+
     def __init__(self):
         super().__init__()
         self._init()
+        self.add_widgets_signal.connect(self.add_widgets)
 
     def _init(self):
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -52,10 +59,19 @@ class StackPage(QtWidgets.QScrollArea):
         widget.setLayout(self.vbox)
         return widget
 
-    def add_witem(self, witems):
-        witems = list(witems)
-        for witem in witems:
-            self.vbox.addWitem(witem)
+    @QtCore.pyqtSlot(list)
+    def add_widgets(self, widgets_info):
+        # widgets_info = [[widget_mode, hw_info], ["fan", hw_info]]
+        for widget_info in widgets_info:
+            if widget_info[0] == "fan":
+                self.vbox.addWidget(
+                    control.FanWidget(
+                        widget_info[1],
+                        widget_info[2],
+                        lambda x="": print("profile button clicked !"),
+                        self.update_dev_hw_info,
+                    )
+                )
 
 
 class MainRight(QtWidgets.QWidget):
@@ -63,13 +79,11 @@ class MainRight(QtWidgets.QWidget):
         super().__init__()
         self.info = info_obj
         self.setLayout(self._layout())
-        info_obj.dev_hw_inf_updater.start()
 
     def _layout(self):
         vbox = main_widgets.VBox()
-        vbox.addWidget(
-            Stack(
-                self.info,
-            )
+        self.stack_frame = Stack(
+            self.info,
         )
+        vbox.addWidget(self.stack_frame)
         return vbox

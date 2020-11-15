@@ -3,19 +3,26 @@ from ui_widgets import main_widgets
 
 
 class FanWidget(main_widgets.HardwareWidget):
-    def __init__(self, fan_name: str, hw_info, to_connect, update_signal):
+    def __init__(
+        self,
+        fan_name: str,
+        hw_info: list,
+        to_connect,
+        update_signal: QtCore.pyqtSignal,
+    ):
         super().__init__(
             hw_name=fan_name,
             hw_info=hw_info,
             settings_btn_to_cnct=to_connect,
         )
         self.name = fan_name
-        # self.update_signal.connect(self.on_update())
+        update_signal.connect(self.on_update)
 
     @QtCore.pyqtSlot(dict)
     def on_update(self, dev_hw_info):
         hw_info = dev_hw_info.get(self.name)
-        self.update_hw_info(hw_info)
+        if hw_info:
+            self.update_hw_info(hw_info)
 
 
 class Signals(QtCore.QObject):
