@@ -50,6 +50,7 @@ class StackPage(QtWidgets.QScrollArea):
     def _init(self):
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setWidgetResizable(True)
         self.setWidget(self._layout())
 
@@ -61,17 +62,21 @@ class StackPage(QtWidgets.QScrollArea):
 
     @QtCore.pyqtSlot(list)
     def add_widgets(self, widgets_info):
-        # widgets_info = [[widget_mode, hw_info], ["fan", hw_info]]
+        # widgets_info = [[widget_type, widget_name, hw_info], ["fan","Fan 1", hw_info]]
         for widget_info in widgets_info:
             if widget_info[0] == "fan":
-                self.vbox.addWidget(
+                self.vbox.insertWidget(
+                    -1,
                     control.FanWidget(
                         widget_info[1],
                         widget_info[2],
                         lambda x="": print("profile button clicked !"),
                         self.update_dev_hw_info,
-                    )
+                    ),
                 )
+        self.vbox.addItem(
+            main_widgets.Spacer(v_pol=QtWidgets.QSizePolicy.Expanding)
+        )
 
 
 class MainRight(QtWidgets.QWidget):

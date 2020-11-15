@@ -149,7 +149,7 @@ class Info:
         ]  # fan, pump widgets
 
     def _main(self):
-        self.dev_hw_inf_updater = InfoUpdater(self, pause=3)
+        self.dev_hw_inf_updater = InfoUpdater(self)
         self.main_handler = Handler(self.window, self)
         self.signals = Signals()
 
@@ -164,7 +164,7 @@ class Info:
 class InfoUpdater:
     __slots__ = ("info", "pause", "widgets_created", "do_update")
 
-    def __init__(self, info, pause=6):
+    def __init__(self, info, pause=2):
         self.info = info
         self.pause = pause
         self.widgets_created = []
@@ -212,7 +212,7 @@ class InfoUpdater:
                     ]
                 ):
                     curr_page.add_widgets_signal.emit(
-                        ["fan", widget_name, hw_info]
+                        [["fan", widget_name, hw_info]]
                     )
                     self.info.control_device_widgets[
                         self.info.curr_dev_index

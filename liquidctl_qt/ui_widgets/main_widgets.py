@@ -154,11 +154,12 @@ class HardwareWidget(QtWidgets.QFrame):
             def _set_labels(self, hw_info):
                 """
                 hw_info = (
-                    ["current", 0.5, "A"],
-                    ["rpm", 100, "rpm"],
+                    ["Current", 0.5, "A"],
+                    ["Speed", 100, "rpm"],
                     ...
                 )
                 """
+                self.addItem(Spacer(), 1, 3)
                 for i, _hw_info in enumerate(hw_info):
                     self.addWidget(Label(text=_hw_info[0]), i, 1)
                     self.addWidget(
@@ -175,7 +176,7 @@ class HardwareWidget(QtWidgets.QFrame):
                             aligment=Qt.AlignRight | Qt.AlignVCenter,
                         ),
                         i,
-                        3,
+                        4,
                     )
 
             def update_info(self, hw_info):
