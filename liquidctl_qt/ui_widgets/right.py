@@ -21,44 +21,41 @@ class Stack(QtWidgets.QFrame):
 
     def _layout(self):
         box = QtWidgets.QVBoxLayout()
-        box.addWidget(self._stacked_widget())
+        self.stacked_widget = main_widgets.StackedWidget()
+        self.add_pages()
+        box.addWidget(self.stacked_widget)
         self.setLayout(box)
 
-    def _stacked_widget(self):
-        self.stack_widget = main_widgets.StackedWidget()
-        return self.stack_widget
-
-    def add_pages(self, pages):
-        for page in pages:
-            self.stack_widget.addWidget(page)
+    def add_pages(self):
+        for dev_obj in self.info.devices_list:
+            self.stacked_widget.addWidget(StackPage())
 
     @QtCore.pyqtSlot(list)
     def set_page(self, info_list):
-        self.stack_widget.setCurrentIndex(info_list[1])
+        self.stacked_widget.setCurrentIndex(info_list[1])
 
 
-class Controls(main_widgets.HBox):
-    def __init__(self, multi_ctrl_to_cnct):
+class StackPage(QtWidgets.QScrollArea):
+    def __init__(self):
         super().__init__()
-        self._multi_ctrl_to_cnct = multi_ctrl_to_cnct
-        self._layout()
+        self._init()
 
-    def _multi_control_btn(self):
-        btn = main_widgets.Button(
-            "multi_control",
-            "Multi Settings",
-            self._multi_ctrl_to_cnct,
-            enabled=False,
-        )
-        btn.setToolTip("Configure multiple hardware devices")
-        btn.setToolTipDuration(0.5)
-        return btn
+    def _init(self):
+        self.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.setWidgetResizable(True)
+        self.setWidget(self._layout())
 
     def _layout(self):
-        self.addItem(
-            main_widgets.Spacer(h_pol=QtWidgets.QSizePolicy.Expanding)
-        )
-        self.addWidget(self._multi_control_btn())
+        widget = QtWidgets.QWidget()
+        self.vbox = main_widgets.VBox()
+        widget.setLayout(self.vbox)
+        return widget
+
+    def add_witem(self, witems):
+        witems = list(witems)
+        for witem in witems:
+            self.vbox.addWitem(witem)
 
 
 class MainRight(QtWidgets.QWidget):
@@ -66,17 +63,13 @@ class MainRight(QtWidgets.QWidget):
         super().__init__()
         self.info = info_obj
         self.setLayout(self._layout())
-        info_obj.dev_hw_inf_updater.start() # fixme: make it start updating on startup !
+        info_obj.dev_hw_inf_updater.start()
 
     def _layout(self):
         vbox = main_widgets.VBox()
-        self.controls = Controls(
-            self.info.main_handler.multi_settings,
-        )
         vbox.addWidget(
             Stack(
                 self.info,
             )
         )
-        vbox.addItem(self.controls)
         return vbox

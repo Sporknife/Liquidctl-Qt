@@ -102,19 +102,6 @@ class ComboBox(QtWidgets.QComboBox):
             to_reset_event.connect(self.reset)
 
 
-class ColumnView(QtWidgets.QColumnView):
-    def __init__(
-        self, name: str = "", model=None, columns=[], to_reset_event=None
-    ):
-        super().__init__()
-        if name:
-            self.setObjectName(name)
-        if model:
-            self.setModel(model)
-        if to_reset_event:
-            to_reset_event.connect(self.reset())
-
-
 class HardwareWidget(QtWidgets.QFrame):
     __slots__ = "hw_info_obj"
 

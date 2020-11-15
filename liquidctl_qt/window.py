@@ -5,7 +5,6 @@ from threading import Thread, Event
 
 
 class Signals(QtCore.QObject):
-    update_dev_hw_info = QtCore.pyqtSignal(dict, name="info-updater")
     device_changed_signal = QtCore.pyqtSignal(list, name="device-changed")
 
     def __init__(self):
@@ -173,21 +172,31 @@ class InfoUpdater:
         """
         self.widgets_created.append(self.info.curr_dev_index)
         print("device init started !")
-        dev_status = self.info.curr_device_obj.get_status()
+
+        def parsed_info():
+            return self.info_parser(self.info.curr_device_obj.get_status())
+
+        _parsed_info = None
+        while not _parsed_info:
+            self.do_update.wait(1)
+            _parsed_info = parsed_info()
+        for key, hw_data in _parsed_info.items():
+            pass
 
     def _start(self, loc_to_update):
         if self.info.curr_dev_index not in self.widgets_created:
             self._init()
 
         while not loc_to_update.is_set():
-            dev_status = self.info.curr_device_obj.get_status()
-            print(self.info_parser(dev_status))
-            # self.info.signals.device_changed_signals[self.curr_dev_index].emit(dev_status)
+            parsed_info = self.info_parser(
+                self.info.curr_device_obj.get_status()
+            )
+            print(parsed_info)
             loc_to_update.wait(self.pause)
 
     def start(self):
         do_update = Event()
-        self.do_update= do_update
+        self.do_update = do_update
         Thread(target=self._start, args=(do_update,)).start()
 
     def stop(self):
@@ -203,7 +212,7 @@ class InfoUpdater:
                 current = dev_status[i + 1][1]
                 speed = dev_status[i + 2][1]
                 voltage = dev_status[i + 3][1]
-                hw_info[line[0]] = ["fan", mode, current, speed, voltage]
+                hw_info[line[0]] = [mode, current, speed, voltage]
         return hw_info
 
     @staticmethod
