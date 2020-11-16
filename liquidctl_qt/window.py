@@ -167,15 +167,20 @@ class InfoUpdater:
     def __init__(self, info, pause=2):
         self.info = info
         self.pause = pause
-        self.widgets_created = []
         self.do_update = None
+
+    def _add_widget_dev_list(self, widget_name):
+        """
+        adds widget name to device widget list
+        """
+        self.info.control_device_widgets[self.info.curr_dev_index].append(
+            widget_name
+        )
 
     def _init(self, curr_page):
         """
         creates and adds hw widgets for current device
         """
-        self.widgets_created.append(self.info.curr_dev_index)
-
         _parsed_info = None
         while not _parsed_info:
             self.do_update.wait(1)
@@ -186,9 +191,7 @@ class InfoUpdater:
         for widget_name, hw_info in _parsed_info.items():
             if "Fan" in widget_name:
                 widgets_creation_data.append(["fan", widget_name, hw_info])
-            self.info.control_device_widgets[
-                self.info.curr_dev_index
-            ].append(widget_name)
+                self._add_widget_dev_list(widget_name)
         curr_page.add_widgets_signal.emit(widgets_creation_data)
 
     def _start(self, loc_to_update):
@@ -198,7 +201,7 @@ class InfoUpdater:
         curr_page = (
             self.info.main_right.stack_frame.stacked_widget.currentWidget()
         )
-        if self.info.curr_dev_index not in self.widgets_created:
+        if not self.info.control_device_widgets[self.info.curr_dev_index]:
             self._init(curr_page)
         while not loc_to_update.is_set():
             parsed_info = self.info_parser(
@@ -214,9 +217,7 @@ class InfoUpdater:
                     curr_page.add_widgets_signal.emit(
                         [["fan", widget_name, hw_info]]
                     )
-                    self.info.control_device_widgets[
-                        self.info.curr_dev_index
-                    ].append(widget_name)
+                    self._add_widget_dev_list(widget_name)
             curr_page.update_dev_hw_info.emit(parsed_info)
             loc_to_update.wait(self.pause)
 
@@ -235,11 +236,13 @@ class InfoUpdater:
             header_line = InfoUpdater.checker(line)
             if header_line == "fan":
                 mode = line[1]
-                current = str(dev_status[i + 1][1])
-                speed = str(dev_status[i + 2][1])
-                voltage = str(round(dev_status[i + 3][1], 2))
+                current = dev_status[i + 1][1]
+                speed = dev_status[i + 2][1]
+                voltage = round(dev_status[i + 3][1], 2)
+                power = round(current * voltage, 2)
                 hw_info[line[0]] = [
                     ["Mode", mode, ""],
+                    ["Power consumption", power, "W"],
                     ["Current", current, "A"],
                     ["Speed", speed, "RPM"],
                     ["Voltage", voltage, "V"],

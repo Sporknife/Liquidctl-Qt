@@ -126,7 +126,7 @@ class HardwareWidget(QtWidgets.QFrame):
                 self.addWidget(label)
                 self.addItem(
                     Spacer(
-                        h_pol=QtWidgets.QSizePolicy().Expanding,
+                        h_pol=QtWidgets.QSizePolicy.Expanding,
                     )
                 )
                 if settings_btn_to_cnct:
@@ -140,14 +140,19 @@ class HardwareWidget(QtWidgets.QFrame):
             def __init__(self, hw_info):
                 super().__init__()
                 self.addItem(
-                    Spacer(h_pol=QtWidgets.QSizePolicy().Minimum),
+                    Spacer(h_pol=QtWidgets.QSizePolicy.Minimum),
                     0,
                     0,
                 )
                 self.addItem(
-                    Spacer(h_pol=QtWidgets.QSizePolicy().Expanding),
+                    Spacer(h_pol=QtWidgets.QSizePolicy.Expanding),
                     0,
                     1,
+                )
+                self.addItem(
+                    Spacer(h_pol=QtWidgets.QSizePolicy.Fixed),
+                    0,
+                    5,
                 )
                 self._set_labels(hw_info)
 
@@ -164,7 +169,7 @@ class HardwareWidget(QtWidgets.QFrame):
                     self.addWidget(Label(text=_hw_info[0]), i, 1)
                     self.addWidget(
                         Label(
-                            text=_hw_info[1],
+                            text=str(_hw_info[1]),
                             aligment=Qt.AlignRight | Qt.AlignVCenter,
                         ),
                         i,
@@ -181,7 +186,9 @@ class HardwareWidget(QtWidgets.QFrame):
 
             def update_info(self, hw_info):
                 for i, _hw_info in enumerate(hw_info):
-                    self.itemAtPosition(i, 2).widget().setText(_hw_info[1])
+                    self.itemAtPosition(i, 2).widget().setText(
+                        str(_hw_info[1])
+                    )
 
         vbox = QtWidgets.QVBoxLayout()
         vbox.addItem(Top(hw_name, settings_btn_to_cnct))
