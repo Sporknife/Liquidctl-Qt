@@ -2,7 +2,7 @@
 **A GUI for [liquidctl](https://github.com/jonasmalacofilho/liquidctl).**
 
 ## Current state
-> In early deelopment. See [current status](#current-status).
+> Currently i am working on profile widget. Fan widget are added and info updated.
 
 ## Current status
 * [ ] Backend
