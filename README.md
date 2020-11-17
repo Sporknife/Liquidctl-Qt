@@ -18,6 +18,8 @@
 
 * [ ] App working
 	- [x] App acutally works and displays widgets properly, etc.
+	- [ ] Has all the features I and others want ? *nope! half way there !*
+
 ## Dependencies
 * [Liquidctl](https://github.com/jonasmalacofilho/liquidctl)
 * Python3
