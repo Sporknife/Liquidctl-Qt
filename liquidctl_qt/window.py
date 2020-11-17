@@ -1,18 +1,23 @@
-from PyQt5 import QtWidgets, QtCore, QtGui
-from ui_widgets import main_widgets, left, right, control
+from PyQt5 import QtWidgets, QtCore
+from ui_widgets import (
+    main_widgets,
+    left,
+    right,
+)  # pylint: disable=unused-import
 from liquidctl_api import liquidctl_api
 from threading import Thread, Event
 
 
 class Signals(QtCore.QObject):
-    device_changed_signal = QtCore.pyqtSignal(list, name="device-changed")
+    """This class contains signal/s"""
 
-    def __init__(self):
-        super().__init__()
+    device_changed_signal = QtCore.pyqtSignal(list, name="device-changed")
 
 
 class Handler(QtCore.QObject):
-    __slots__ = "info"
+    """Where main events are handled"""
+
+    __slots__ = ("info",)
 
     def __init__(self, window_obj, info_obj):
         super().__init__()
@@ -37,39 +42,6 @@ class Handler(QtCore.QObject):
         print("multi apply")
 
 
-class DecisionDialog(QtWidgets.QDialog):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setWindowTitle("Decisions...")
-        self.setModal(True)
-        self.setLayout(self._layout())
-        width, height = int(self.width()), int(self.height())
-
-        self.setMaximumSize(width, height)
-
-    def _layout(self):
-        vbox = main_widgets.VBox()
-        msg_label = main_widgets.Label(
-            text="Would you like to exit the application\n(and loose your unsaved/unapplied settings) ?",
-            aligment=QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter,
-        )
-        vbox.addWidget(msg_label)
-        vbox.addWidget(self._buttons_box())
-        return vbox
-
-    def _buttons_box(self):
-        buttons = (
-            QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes
-        )
-        buttons_box = QtWidgets.QDialogButtonBox(buttons)
-        buttons_box.accepted.connect(self.accept)
-        buttons_box.rejected.connect(self.reject)
-        return buttons_box
-
-    def closeEvent(self, close_event):
-        self.reject()
-
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -78,8 +50,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _main_window_init(self):
         self.setWindowTitle("Liquidctl-Qt")
-        self.setCentralWidget(self._layout())
         self.show()
+        self.setCentralWidget(self._layout())
 
     def _layout(self):
         central_widget = QtWidgets.QWidget()
@@ -89,8 +61,8 @@ class MainWindow(QtWidgets.QMainWindow):
         central_widget.setLayout(hbox)
         return central_widget
 
-    def closeEvent(self, close_event):
-        dialog = DecisionDialog(self)
+    def closeEvent(self, close_event):  # pylint: disable=invalid-name
+        dialog = main_widgets.DecisionDialog(self)
         if dialog.exec_():
             self.info.dev_hw_inf_updater.stop()
             close_event.accept()
@@ -102,8 +74,8 @@ class Info:
     __slots__ = (
         "control_device_widgets",
         "curr_dev_index",
-        "devices_dict",
-        "devices_list",
+        "DEVICES_DICT",
+        "DEVICES_LIST",
         "liquidctl_api",
         "main_handler",
         "main_left",
@@ -127,12 +99,12 @@ class Info:
 
     def _liquidctl_api(self):
         self.liquidctl_api = liquidctl_api.LiquidctlApi()
-        self.devices_dict = self.liquidctl_api.devices_dict
-        self.devices_list = self.liquidctl_api.devices_list
+        self.DEVICES_DICT = self.liquidctl_api.devices_dict # pylint: disable=invalid-name
+        self.DEVICES_LIST = self.liquidctl_api.devices_list  # pylint: disable=invalid-name
 
     @property
     def curr_device_obj(self):
-        return self.devices_list[self.curr_dev_index]
+        return self.DEVICES_LIST[self.curr_dev_index]
 
     @property
     def curr_dev_info(self):
@@ -145,8 +117,8 @@ class Info:
         self.curr_dev_index = 0
         self.profile_setting_dialogs = {}  # dialog widgets
         self.control_device_widgets = [
-            [] for device in self.devices_list
-        ]  # fan, pump widgets
+            [] for device in self.DEVICES_LIST
+        ]
 
     def _main(self):
         self.dev_hw_inf_updater = InfoUpdater(self)
@@ -164,7 +136,7 @@ class Info:
 class InfoUpdater:
     __slots__ = ("info", "pause", "widgets_created", "do_update")
 
-    def __init__(self, info, pause=2):
+    def __init__(self, info, pause=3):
         self.info = info
         self.pause = pause
         self.do_update = None
@@ -177,35 +149,37 @@ class InfoUpdater:
             widget_name
         )
 
-    def _init(self, curr_page):
+    def _init(self, curr_page, loc_curr_dev_obj):
         """
         creates and adds hw widgets for current device
+        loc_curr_dev_obj = local curr device object
         """
-        _parsed_info = None
-        while not _parsed_info:
+        parsed_info = None
+        while not parsed_info:
             self.do_update.wait(1)
-            _parsed_info = self.info_parser(
-                self.info.curr_device_obj.get_status()
+            parsed_info = self.info_parser(
+                loc_curr_dev_obj.get_status()
             )
         widgets_creation_data = []
-        for widget_name, hw_info in _parsed_info.items():
+        for widget_name, hw_info in parsed_info.items():
             if "Fan" in widget_name:
                 widgets_creation_data.append(["fan", widget_name, hw_info])
                 self._add_widget_dev_list(widget_name)
         curr_page.add_widgets_signal.emit(widgets_creation_data)
 
-    def _start(self, loc_to_update):
+    def _start(self, loc_to_update, curr_page):
         """
         updates hw info of currently selected device
+        loc_to_update = "local to update"
+        curr_page = "page that start() was started on"
         """
-        curr_page = (
-            self.info.main_right.stack_frame.stacked_widget.currentWidget()
-        )
+        curr_dev_obj = self.info.curr_device_obj
+
         if not self.info.control_device_widgets[self.info.curr_dev_index]:
-            self._init(curr_page)
+            self._init(curr_page, curr_dev_obj)
         while not loc_to_update.is_set():
             parsed_info = self.info_parser(
-                self.info.curr_device_obj.get_status()
+               curr_dev_obj.get_status()
             )
             for widget_name, hw_info in parsed_info.items():
                 if (
@@ -214,7 +188,7 @@ class InfoUpdater:
                         self.info.curr_dev_index
                     ]
                 ):
-                    curr_page.add_widgets_signal.emit(
+                    curr_page.insert_widget_signal.emit(
                         [["fan", widget_name, hw_info]]
                     )
                     self._add_widget_dev_list(widget_name)
@@ -223,8 +197,11 @@ class InfoUpdater:
 
     def start(self):
         do_update = Event()
+        curr_page = (
+            self.info.main_right.stack_frame.stacked_widget.currentWidget()
+        )
         self.do_update = do_update
-        Thread(target=self._start, args=(do_update,)).start()
+        Thread(target=self._start, args=(do_update, curr_page)).start()
 
     def stop(self):
         self.do_update.set()
@@ -236,10 +213,10 @@ class InfoUpdater:
             header_line = InfoUpdater.checker(line)
             if header_line == "fan":
                 mode = line[1]
-                current = dev_status[i + 1][1]
+                current = dev_status[i+1][1]
                 speed = dev_status[i + 2][1]
-                voltage = round(dev_status[i + 3][1], 2)
-                power = round(current * voltage, 2)
+                voltage = dev_status[i + 3][1]
+                power = current * voltage
                 hw_info[line[0]] = [
                     ["Mode", mode, ""],
                     ["Power consumption", power, "W"],

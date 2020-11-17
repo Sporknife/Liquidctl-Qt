@@ -22,15 +22,12 @@ class Stack(QtWidgets.QFrame):
     def _layout(self):
         box = QtWidgets.QVBoxLayout()
         self.stacked_widget = main_widgets.StackedWidget()
-        [
-            self.stacked_widget.addWidget(StackPage())
-            for device in self.info.devices_list
-        ]
+        self.add_pages()
         box.addWidget(self.stacked_widget)
         self.setLayout(box)
 
     def add_pages(self):
-        for dev_obj in self.info.devices_list:
+        for _ in self.info.devices_list:
             self.stacked_widget.addWidget(StackPage())
 
     @QtCore.pyqtSlot(list)
@@ -40,12 +37,14 @@ class Stack(QtWidgets.QFrame):
 
 class StackPage(QtWidgets.QScrollArea):
     update_dev_hw_info = QtCore.pyqtSignal(dict, name="info-updater")
-    add_widgets_signal = QtCore.pyqtSignal(list, name="witem-adder")
+    add_widgets_signal = QtCore.pyqtSignal(list, name="widgets-adder")
+    insert_widget_signal = QtCore.pyqtSignal(list, name="widget-inserter")
 
     def __init__(self):
         super().__init__()
         self._init()
         self.add_widgets_signal.connect(self.add_widgets)
+        self.insert_widget_signal.connect(self.insert_widget)
 
     def _init(self):
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -62,21 +61,33 @@ class StackPage(QtWidgets.QScrollArea):
 
     @QtCore.pyqtSlot(list)
     def add_widgets(self, widgets_info):
-        # widgets_info = [[widget_type, widget_name, hw_info], ["fan","Fan 1", hw_info]]
         for widget_info in widgets_info:
             if widget_info[0] == "fan":
-                self.vbox.insertWidget(
-                    -1,
+                self.vbox.addWidget(
                     control.FanWidget(
                         widget_info[1],
                         widget_info[2],
                         lambda x="": print("profile button clicked !"),
                         self.update_dev_hw_info,
-                    ),
+                    )
                 )
         self.vbox.addItem(
             main_widgets.Spacer(v_pol=QtWidgets.QSizePolicy.Expanding)
         )
+
+    @QtCore.pyqtSlot(list)
+    def insert_widget(self, widgets_info):
+        for widget_info in widgets_info:
+            if widget_info[0] == "fan":
+                self.vbox.insertWidget(
+                    0,
+                    control.FanWidget(
+                        widget_info[1],
+                        widget_info[2],
+                        lambda x="": print("profile button clicked !"),
+                        self.update_dev_hw_info,
+                    )
+                )
 
 
 class MainRight(QtWidgets.QWidget):

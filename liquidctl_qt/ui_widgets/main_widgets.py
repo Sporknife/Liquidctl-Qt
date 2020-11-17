@@ -1,5 +1,4 @@
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 
 class Button(QtWidgets.QPushButton):
@@ -50,7 +49,7 @@ class CheckBox(QtWidgets.QCheckBox):
             QtWidgets.QSizePolicy.Preferred,
         ],
         to_reset_event=None,
-    ):
+    ):  # pylint: disable=dangerous-default-value
         super().__init__()
         if name:
             self.setObjectName(name)
@@ -69,7 +68,7 @@ class CheckBox(QtWidgets.QCheckBox):
         if to_reset_event:
             to_reset_event.connect(self.reset)
 
-    @pyqtSlot()
+    @QtCore.pyqtSlot()
     def reset(self):
         self.setChecked(self.checked)
 
@@ -84,7 +83,7 @@ class ComboBox(QtWidgets.QComboBox):
         to_connect=None,
         pass_index=False,
         to_reset_event=None,
-    ):
+    ):  # pylint: disable=dangerous-default-value
         super().__init__()
         if name:
             self.setObjectName(name)
@@ -92,7 +91,7 @@ class ComboBox(QtWidgets.QComboBox):
             self.addItems(items)
         self.setSizePolicy(h_pol, v_pol)
         if to_connect:
-            if pass_value:
+            if pass_index:
                 self.currentIndexChanged.connect(
                     lambda: to_connect(self.currentIndex())
                 )
@@ -102,8 +101,51 @@ class ComboBox(QtWidgets.QComboBox):
             to_reset_event.connect(self.reset)
 
 
+class DecisionDialog(QtWidgets.QDialog):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setWindowTitle("Decisions...")
+        self.setModal(True)
+        self.setLayout(self._layout())
+        width, height = int(self.width()), int(self.height())
+
+        self.setMaximumSize(width, height)
+
+    def _layout(self):
+        vbox = VBox()
+        # pylint: disable=invalid-name
+        MSG_TEXT = (
+            "Would you like to exit the application\n"
+            + "(and loose your unsaved/unapplied settings) ?"
+        )
+        msg_label = Label(
+            text=MSG_TEXT,
+            aligment=QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter,
+        )
+        vbox.addWidget(msg_label)
+        vbox.addWidget(self._buttons_box())
+        return vbox
+
+    def _buttons_box(self):
+        buttons = (
+            QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes
+        )
+        buttons_box = QtWidgets.QDialogButtonBox(buttons)
+        buttons_box.accepted.connect(self.accept)
+        buttons_box.rejected.connect(self.reject)
+        return buttons_box
+
+    @QtCore.pyqtSlot(QtGui.QCloseEvent)
+    def closeEvent(self, close_event):  # pylint: disable=invalid-name
+        close_event.reject()
+
+
 class HardwareWidget(QtWidgets.QFrame):
-    __slots__ = "hw_info_obj"
+    """
+    Hardware widget that shows you basic info about specific hardware
+    and allows you to change some settings
+    """
+    __slots__ = ("hw_info_obj",)
 
     def __init__(
         self,
@@ -116,7 +158,7 @@ class HardwareWidget(QtWidgets.QFrame):
         self.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.setLineWidth(1)
 
-        class Top(HBox):
+        class Top(HBox):  # pylint: disable=used-before-assignment
             def __init__(self, hw_name, settings_btn_to_cnct):
                 super().__init__(self)
                 self._layout(hw_name, settings_btn_to_cnct)
@@ -165,29 +207,31 @@ class HardwareWidget(QtWidgets.QFrame):
                 )
                 """
                 self.addItem(Spacer(), 1, 3)
-                for i, _hw_info in enumerate(hw_info):
-                    self.addWidget(Label(text=_hw_info[0]), i, 1)
+                for i, info in enumerate(hw_info):
+                    self.addWidget(Label(text=info[0]), i, 1)
                     self.addWidget(
                         Label(
-                            text=str(_hw_info[1]),
-                            aligment=Qt.AlignRight | Qt.AlignVCenter,
+                            text=str(info[1]),
+                            aligment=QtCore.Qt.AlignRight
+                            | QtCore.Qt.AlignVCenter,
                         ),
                         i,
                         2,
                     )
                     self.addWidget(
                         Label(
-                            text=_hw_info[2],
-                            aligment=Qt.AlignRight | Qt.AlignVCenter,
+                            text=info[2],
+                            aligment=QtCore.Qt.AlignRight
+                            | QtCore.Qt.AlignVCenter,
                         ),
                         i,
                         4,
                     )
 
             def update_info(self, hw_info):
-                for i, _hw_info in enumerate(hw_info):
+                for i, info in enumerate(hw_info):
                     self.itemAtPosition(i, 2).widget().setText(
-                        str(_hw_info[1])
+                        str(info[1])
                     )
 
         vbox = QtWidgets.QVBoxLayout()
@@ -196,8 +240,8 @@ class HardwareWidget(QtWidgets.QFrame):
         vbox.addItem(self.hw_info_obj)
         self.setLayout(vbox)
 
-    def update_hw_info(self, _hw_info):
-        self.hw_info_obj.update_info(_hw_info)
+    def update_info(self, info):
+        self.hw_info_obj.update_info(info)
 
 
 class HBox(QtWidgets.QHBoxLayout):
@@ -207,15 +251,15 @@ class HBox(QtWidgets.QHBoxLayout):
         if widget:
             self.addWidget(widget)
 
-    def addWidgets(self, widgets):
+    def addWidgets(self, widgets):  # pylint: disable=invalid-name
         for widget in widgets:
             self.addWidget(widget)
 
-    def addItems(self, items):
+    def addItems(self, items):  # pylint: disable=invalid-name
         for item in items:
             self.addItem(item)
 
-    def addWitems(self, witems):
+    def addWitems(self, witems):  # pylint: disable=invalid-name
         """
         add widget or item
         """
@@ -237,7 +281,7 @@ class Label(QtWidgets.QLabel):
         self,
         name: str = "",
         text: str = "",
-        aligment=Qt.AlignLeft | Qt.AlignVCenter,
+        aligment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter,
         font_size: int = 0,
         font_weight: int = 0,
         enabled=True,
@@ -259,7 +303,7 @@ class Label(QtWidgets.QLabel):
         if not enabled:
             self.setEnabled(enabled)
 
-    @pyqtSlot()
+    @QtCore.pyqtSlot()
     def reset(self):
         self.setText(self.text)
 
@@ -268,10 +312,8 @@ class Line(QtWidgets.QFrame):
     def __init__(
         self,
         orient: str,
-        size_policy: list = [
-            QtWidgets.QSizePolicy.Preferred,
-            QtWidgets.QSizePolicy.Preferred,
-        ],
+        h_size_pol = QtWidgets.QSizePolicy.Preferred,
+        v_size_pol = QtWidgets.QSizePolicy.Preferred
     ):
         """
         orient = h/v
@@ -282,20 +324,17 @@ class Line(QtWidgets.QFrame):
         else:
             self.setFrameShape(QtWidgets.QFrame.VLine)
         self.setFrameShadow(QtWidgets.QFrame.Sunken)
-        if size_policy:
-            self.setSizePolicy(size_policy[0], size_policy[1])
+        self.setSizePolicy(h_size_pol, v_size_pol)
 
 
 class Slider(QtWidgets.QSlider):
     def __init__(
         self,
         name: str = "",
-        orientation=None,
+        orientation=QtCore.Qt.Horizontal,
         value: int = 0,
-        size_policy: list = [
-            QtWidgets.QSizePolicy.Preferred,
-            QtWidgets.QSizePolicy.Preferred,
-        ],
+        h_size_pol = QtWidgets.QSizePolicy.Preferred,
+        v_size_pol = QtWidgets.QSizePolicy.Preferred,
         to_connect=None,
         pass_value=False,
         min_max: list = [0, 100],
@@ -303,13 +342,10 @@ class Slider(QtWidgets.QSlider):
         enabled=True,
     ):
         super().__init__()
-        if name:
-            self.setObjectName(name)
-        if orientation:
-            self.setOrientation(orientation)
+        self.setObjectName(name)
+        self.setOrientation(orientation)
         self.setValue(value)
-        if size_policy:
-            self.setSizePolicy(size_policy[0], size_policy[1])
+        self.setSizePolicy(h_size_pol, v_size_pol)
         if to_connect:
             if pass_value:
                 self.valueChanged.connect(lambda: to_connect(self.value()))
@@ -326,11 +362,11 @@ class Slider(QtWidgets.QSlider):
 
             self.setEnabled(enabled)
 
-    @pyqtSlot()
+    @QtCore.pyqtSlot()
     def reset(self):
         self.setValue(0)
 
-    @pyqtSlot(bool)
+    @QtCore.pyqtSlot(bool)
     def mode(self, mode):
         self.setEnabled(mode)
 
@@ -349,7 +385,6 @@ class Spacer(QtWidgets.QSpacerItem):
 class StackedWidget(QtWidgets.QStackedWidget):
     def __init__(
         self,
-        pages=[],
     ):
         super().__init__()
         print("main_widgets.Stack, add animations")
@@ -365,15 +400,15 @@ class VBox(QtWidgets.QVBoxLayout):
         if widget:
             self.addWidget(widget)
 
-    def addWidgets(self, widgets):
+    def addWidgets(self, widgets):  # pylint: disable=invalid-name
         for widget in widgets:
             self.addWidget(widget)
 
-    def addItems(self, items):
+    def addItems(self, items):  # pylint: disable=invalid-name
         for item in items:
             self.addItem(item)
 
-    def addWitems(self, witems):
+    def addWitems(self, witems):  # pylint: disable=invalid-name
         """
         add widget or item
         """

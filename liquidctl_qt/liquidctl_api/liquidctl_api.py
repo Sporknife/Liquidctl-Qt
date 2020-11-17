@@ -1,6 +1,4 @@
 from liquidctl.driver import find_liquidctl_devices
-
-from liquidctl.util import color_from_str
 from liquidctl_api import fake_devices
 
 
@@ -61,7 +59,7 @@ class LiquidctlApi:
                 if value[0] == dev_id
             ]
 
-        if dev_index != None:
+        if dev_index is not None:
             try:
                 return self.devices_list[dev_index]
             except IndexError:

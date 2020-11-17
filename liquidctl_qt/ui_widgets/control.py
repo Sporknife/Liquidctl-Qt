@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets, QtCore
-from ui_widgets import main_widgets
+from PyQt5 import QtCore, QtWidgets
+from ui_widgets import main_widgets, profile_editor
 
 
 class FanWidget(main_widgets.HardwareWidget):
@@ -22,32 +22,21 @@ class FanWidget(main_widgets.HardwareWidget):
     def on_update(self, dev_hw_info):
         hw_info = dev_hw_info.get(self.name)
         if hw_info:
-            self.update_hw_info(hw_info)
+            self.update_info(hw_info)
 
 
-class Signals(QtCore.QObject):
-    mode_change_signal = QtCore.pyqtSignal(bool, name="mode-changed")
-    profile_changed = QtCore.pyqtSignal(list, name="mode-changed")
-    remove_profile_signal = QtCore.pyqtSignal(name="update-values")
-    reset_signal = QtCore.pyqtSignal(name="reset-settings")
-    new_step_signal = QtCore.pyqtSignal(name="new-step")
-    remove_step_signal = QtCore.pyqtSignal(name="remove-step")
-
-    def __init__(self):
+class ProfileEditorDialog(QtWidgets.QDialog):
+    def __init__(self, name: str):
         super().__init__()
+        self.setModal(True)
+        self.setWindowTitle(name)
+        layout = main_widgets.HBox()
+        layout.addWidget(profile_editor.ProfileEditor(name, ""))
+        self.setLayout(layout)
 
-    def connect(self, to_change_widgets, signal, enabled=True):
-        if not isinstance(to_change_widgets, tuple):
-            self._connect_signal(to_change_widgets, signal)
-            to_change_widgets.setEnabled(False)
-            return
 
-        for widget in to_change_widgets:
-            self._connect_signal(widget, signal)
-
-    def _connect_signal(self, widget, signal):
-        signal.connect(lambda mode: widget.setEnabled(mode))
-        widget.setEnabled(False)
-
-    def set_signals(self):
-        self.__class__.mode_change_signal
+class LiquidWidget(QtWidgets.QWidget):
+    def __init__(self, name: str, signals_obj):
+        super().__init__()
+        self.signals = signals_obj
+        self.setObjectName(name)

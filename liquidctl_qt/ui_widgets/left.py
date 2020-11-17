@@ -65,9 +65,9 @@ class MainLeft(QtWidgets.QWidget):
         self.setLayout(self.layout())
 
     def _set_device_selector(self):
-        _items = [device.description for device in self.info.devices_list]
         self.device_selector = DeviceSelector(
-            self.info.main_handler.on_device_change, items=_items
+            self.info.main_handler.on_device_change,
+            items=[device.description for device in self.info.DEVICES_LIST]
         )
 
     def _set_device_info(self):
