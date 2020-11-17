@@ -13,7 +13,13 @@
 	- [x] Main window
 	- [x] Fan widget (those that are in the list)
 		- [x] The one in the list with information
-		- [ ] Fan profile changer/editor
+		* [ ] Fan profile changer/editor
+			- [x] Dialog
+			* [ ] Widget
+				- [x] ProfileModeChooser - choose profile and mode (static/profile)
+				- [ ] Steps viewer (QTableView) - view steps ordered by temp.
+				- [ ] Step editor - add/edit/delete a step in steps viewer
+				- [ ] Profile controls - save/delete or reset settings (reset settings to current profile)
 	- [ ] Led widget
 
 * [ ] App working
