@@ -1,5 +1,5 @@
 # Liquidctl-Qt
-**A GUI for [liquidctl](https://github.com/jonasmalacofilho/liquidctl).**
+**A Qt GUI for [liquidctl](https://github.com/jonasmalacofilho/liquidctl).**
 
 ## Current state
 > Currently i am working on profile widget. Fan widget are added and info updated.
