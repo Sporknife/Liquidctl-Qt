@@ -27,7 +27,7 @@
 	- [ ] Has all the features I and others want ? *nope! half way there !*
 
 ## Dependencies
-* [Liquidctl](https://github.com/jonasmalacofilho/liquidctl)
+* [Liquidctl](https://github.com/jonasmalacofilho/liquidctl) (and it's dependencies)
 * Python3
 * Python packages
 	- [PyQt5](https://pypi.org/project/PyQt5/)
