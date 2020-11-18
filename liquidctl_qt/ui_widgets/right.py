@@ -27,7 +27,7 @@ class Stack(QtWidgets.QFrame):
         self.setLayout(box)
 
     def add_pages(self):
-        for _ in self.info.devices_list:
+        for _ in self.info.DEVICES_LIST:
             self.stacked_widget.addWidget(StackPage())
 
     @QtCore.pyqtSlot(list)
@@ -37,7 +37,7 @@ class Stack(QtWidgets.QFrame):
 
 class StackPage(QtWidgets.QScrollArea):
     update_dev_hw_info = QtCore.pyqtSignal(dict, name="info-updater")
-    add_widgets_signal = QtCore.pyqtSignal(list, name="widgets-adder")
+    add_widgets_signal = QtCore.pyqtSignal(dict, name="widgets-adder")
     insert_widget_signal = QtCore.pyqtSignal(list, name="widget-inserter")
 
     def __init__(self):
@@ -59,14 +59,14 @@ class StackPage(QtWidgets.QScrollArea):
         widget.setLayout(self.vbox)
         return widget
 
-    @QtCore.pyqtSlot(list)
-    def add_widgets(self, widgets_info):
-        for widget_info in widgets_info:
-            if widget_info[0] == "fan":
+    @QtCore.pyqtSlot(dict)
+    def add_widgets(self, hw_info):
+        for hw_name in hw_info.keys():
+            if "Fan" in hw_name :
                 self.vbox.addWidget(
                     control.FanWidget(
-                        widget_info[1],
-                        widget_info[2],
+                        hw_name,
+                        hw_info.get(hw_name),
                         lambda x="": print("profile button clicked !"),
                         self.update_dev_hw_info,
                     )
@@ -76,18 +76,19 @@ class StackPage(QtWidgets.QScrollArea):
         )
 
     @QtCore.pyqtSlot(list)
-    def insert_widget(self, widgets_info):
-        for widget_info in widgets_info:
-            if widget_info[0] == "fan":
-                self.vbox.insertWidget(
-                    0,
-                    control.FanWidget(
-                        widget_info[1],
-                        widget_info[2],
-                        lambda x="": print("profile button clicked !"),
-                        self.update_dev_hw_info,
-                    )
+    def insert_widget(self, hw_data):
+        hw_name = hw_data[0]
+        hw_info = hw_data[1]
+        if "Fan" in hw_name :
+            self.vbox.insertWidget(
+                0,
+                control.FanWidget(
+                    hw_name,
+                    hw_info,
+                    lambda x="": print("profile button clicked !"),
+                    self.update_dev_hw_info,
                 )
+            )
 
 
 class MainRight(QtWidgets.QWidget):

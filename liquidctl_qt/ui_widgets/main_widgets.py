@@ -106,6 +106,13 @@ class DecisionDialog(QtWidgets.QDialog):
         super().__init__(*args, **kwargs)
         self.setWindowTitle("Decisions...")
         self.setModal(True)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
+        self.setWindowFlags(
+            self.windowFlags() &
+            ~QtCore.Qt.WindowCloseButtonHint &
+            ~QtCore.Qt.WindowContextHelpButtonHint &
+            ~QtCore.Qt.WindowMinimizeButtonHint
+        )
         self.setLayout(self._layout())
         width, height = int(self.width()), int(self.height())
 
@@ -200,18 +207,19 @@ class HardwareWidget(QtWidgets.QFrame):
 
             def _set_labels(self, hw_info):
                 """
-                hw_info = (
-                    ["Current", 0.5, "A"],
-                    ["Speed", 100, "rpm"],
-                    ...
-                )
+                hw_info = {
+                    'Mode': {'value': 'DC', 'measurement': ''},
+                    'Current': {'value': 0.05, 'measurement': 'A'},
+                    'Speed': {'value': 686, 'measurement': 'rpm'},
+                    'Voltage': {'value': 4.38, 'measurement': 'V'}
+                }
                 """
                 self.addItem(Spacer(), 1, 3)
-                for i, info in enumerate(hw_info):
-                    self.addWidget(Label(text=info[0]), i, 1)
+                for i, info in enumerate(hw_info.keys()):
+                    self.addWidget(Label(text=info), i, 1)
                     self.addWidget(
                         Label(
-                            text=str(info[1]),
+                            text=str(hw_info.get(info).get("value")),
                             aligment=QtCore.Qt.AlignRight
                             | QtCore.Qt.AlignVCenter,
                         ),
@@ -220,7 +228,7 @@ class HardwareWidget(QtWidgets.QFrame):
                     )
                     self.addWidget(
                         Label(
-                            text=info[2],
+                            text=hw_info.get(info).get(("measurement")),
                             aligment=QtCore.Qt.AlignRight
                             | QtCore.Qt.AlignVCenter,
                         ),
@@ -229,10 +237,12 @@ class HardwareWidget(QtWidgets.QFrame):
                     )
 
             def update_info(self, hw_info):
-                for i, info in enumerate(hw_info):
+                for i, info in enumerate(hw_info.keys()):
                     self.itemAtPosition(i, 2).widget().setText(
-                        str(info[1])
+                        str(hw_info.get(info).get("value")
+                        )
                     )
+                    pass
 
         vbox = QtWidgets.QVBoxLayout()
         vbox.addItem(Top(hw_name, settings_btn_to_cnct))

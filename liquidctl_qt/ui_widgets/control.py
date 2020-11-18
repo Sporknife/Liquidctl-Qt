@@ -3,16 +3,17 @@ from ui_widgets import main_widgets, profile_editor
 
 
 class FanWidget(main_widgets.HardwareWidget):
+    """Fan widget which Displays basic info"""
     def __init__(
         self,
         fan_name: str,
-        hw_info: list,
+        fan_info: list,
         to_connect,
         update_signal: QtCore.pyqtSignal,
     ):
         super().__init__(
             hw_name=fan_name,
-            hw_info=hw_info,
+            hw_info=fan_info,
             settings_btn_to_cnct=to_connect,
         )
         self.name = fan_name

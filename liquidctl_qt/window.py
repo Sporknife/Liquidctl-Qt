@@ -27,11 +27,11 @@ class Handler(QtCore.QObject):
     def on_device_change(self, new_index):
         self.info.dev_hw_inf_updater.stop()
         self.info.curr_dev_index = new_index
-        self.info.main_right.stack_frame.stacked_widget.setCurrentIndex(
-            new_index
-        )
         self.info.signals.device_changed_signal.emit(
             [self.info.curr_dev_info, new_index]
+        )
+        self.info.main_right.stack_frame.stacked_widget.setCurrentIndex(
+            new_index
         )
         self.info.dev_hw_inf_updater.start()
 
@@ -136,95 +136,77 @@ class Info:
 class InfoUpdater:
     __slots__ = ("info", "pause", "widgets_created", "do_update")
 
-    def __init__(self, info, pause=3):
+    def __init__(self, info, pause=4):
         self.info = info
         self.pause = pause
         self.do_update = None
 
-    def _add_widget_dev_list(self, widget_name):
+    def _add_widgets_dev_list(self, hw_name, dev_index):
         """
         adds widget name to device widget list
         """
-        self.info.control_device_widgets[self.info.curr_dev_index].append(
-            widget_name
-        )
+        if isinstance(hw_name, str):
+            self.info.control_device_widgets[
+                dev_index
+            ].append(hw_name)
 
-    def _init(self, curr_page, loc_curr_dev_obj):
+        elif isinstance(hw_name, tuple):
+            for name in hw_name:
+                self.info.control_device_widgets[
+                dev_index
+            ].append(name)
+
+    def _init(self, curr_page, dev_obj, dev_index):
         """
         creates and adds hw widgets for current device
-        loc_curr_dev_obj = local curr device object
+        dev_obj = local current device object
         """
         parsed_info = None
         while not parsed_info:
             self.do_update.wait(1)
-            parsed_info = self.info_parser(
-                loc_curr_dev_obj.get_status()
+            parsed_info = self.info.liquidctl_api.to_dict(
+                dev_obj.get_status()
             )
-        widgets_creation_data = []
-        for widget_name, hw_info in parsed_info.items():
-            if "Fan" in widget_name:
-                widgets_creation_data.append(["fan", widget_name, hw_info])
-                self._add_widget_dev_list(widget_name)
-        curr_page.add_widgets_signal.emit(widgets_creation_data)
+        curr_page.add_widgets_signal.emit(parsed_info)
+        self._add_widgets_dev_list(tuple(parsed_info.keys()), dev_index)
 
-    def _start(self, loc_to_update, curr_page):
+
+    def _start(self, loc_to_update):
         """
         updates hw info of currently selected device
         loc_to_update = "local to update"
         curr_page = "page that start() was started on"
         """
-        curr_dev_obj = self.info.curr_device_obj
+        curr_page = (
+            self.info.main_right.stack_frame.stacked_widget.currentWidget()
+        )
+        dev_obj = self.info.curr_device_obj
+        dev_index = self.info.curr_dev_index
 
-        if not self.info.control_device_widgets[self.info.curr_dev_index]:
-            self._init(curr_page, curr_dev_obj)
+        if not self.info.control_device_widgets[dev_index]:
+            self._init(curr_page, dev_obj, dev_index)
         while not loc_to_update.is_set():
-            parsed_info = self.info_parser(
-               curr_dev_obj.get_status()
+            parsed_info = self.info.liquidctl_api.to_dict(
+                dev_obj.get_status()
             )
-            for widget_name, hw_info in parsed_info.items():
+            for hw_name, hw_info in parsed_info.items():
                 if (
-                    widget_name
+                    hw_name
                     not in self.info.control_device_widgets[
-                        self.info.curr_dev_index
-                    ]
+                        dev_index]
                 ):
-                    curr_page.insert_widget_signal.emit(
-                        [["fan", widget_name, hw_info]]
-                    )
-                    self._add_widget_dev_list(widget_name)
+                    curr_page.insert_widget_signal.emit([hw_name, hw_info])
+                    self._add_widgets_dev_list(hw_name, dev_index)
             curr_page.update_dev_hw_info.emit(parsed_info)
             loc_to_update.wait(self.pause)
 
     def start(self):
         do_update = Event()
-        curr_page = (
-            self.info.main_right.stack_frame.stacked_widget.currentWidget()
-        )
         self.do_update = do_update
-        Thread(target=self._start, args=(do_update, curr_page)).start()
+        Thread(target=self._start, args=(do_update,)).start()
 
     def stop(self):
         self.do_update.set()
-
-    def info_parser(self, dev_status):
-        hw_info = {}
-        for i, line in enumerate(dev_status):
-            line = list(line)
-            header_line = InfoUpdater.checker(line)
-            if header_line == "fan":
-                mode = line[1]
-                current = dev_status[i+1][1]
-                speed = dev_status[i + 2][1]
-                voltage = dev_status[i + 3][1]
-                power = current * voltage
-                hw_info[line[0]] = [
-                    ["Mode", mode, ""],
-                    ["Power consumption", power, "W"],
-                    ["Current", current, "A"],
-                    ["Speed", speed, "RPM"],
-                    ["Voltage", voltage, "V"],
-                ]
-        return hw_info
 
     @staticmethod
     def checker(line: list):
