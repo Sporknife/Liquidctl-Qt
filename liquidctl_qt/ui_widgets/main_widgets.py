@@ -110,8 +110,7 @@ class DecisionDialog(QtWidgets.QDialog):
         self.setWindowFlags(
             self.windowFlags() &
             ~QtCore.Qt.WindowCloseButtonHint &
-            ~QtCore.Qt.WindowContextHelpButtonHint &
-            ~QtCore.Qt.WindowMinimizeButtonHint
+            ~QtCore.Qt.WindowContextHelpButtonHint
         )
         self.setLayout(self._layout())
         width, height = int(self.width()), int(self.height())

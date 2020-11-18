@@ -134,12 +134,13 @@ class Info:
 
 
 class InfoUpdater:
-    __slots__ = ("info", "pause", "widgets_created", "do_update")
+    __slots__ = ("info", "pause", "widgets_created", "do_update", "curr_active")
 
     def __init__(self, info, pause=4):
         self.info = info
         self.pause = pause
         self.do_update = None
+        self.curr_active = [False for _ in self.info.DEVICES_LIST]
 
     def _add_widgets_dev_list(self, hw_name, dev_index):
         """
@@ -156,12 +157,24 @@ class InfoUpdater:
                 dev_index
             ].append(name)
 
+    def _add_unadded_widgets(self, parsed_info, curr_page, dev_index):
+        """Checks for unadded hardware widgets"""
+        for hw_name, hw_info in parsed_info.items():
+            if (
+                hw_name
+                not in self.info.control_device_widgets[
+                    dev_index]
+            ):
+                curr_page.insert_widget_signal.emit([hw_name, hw_info])
+                self._add_widgets_dev_list(hw_name, dev_index)
+
     def _init(self, curr_page, dev_obj, dev_index):
         """
         creates and adds hw widgets for current device
         dev_obj = local current device object
         """
         parsed_info = None
+        self.curr_active[dev_index] = True
         while not parsed_info:
             self.do_update.wait(1)
             parsed_info = self.info.liquidctl_api.to_dict(
@@ -169,6 +182,7 @@ class InfoUpdater:
             )
         curr_page.add_widgets_signal.emit(parsed_info)
         self._add_widgets_dev_list(tuple(parsed_info.keys()), dev_index)
+        self.curr_active[dev_index] = False
 
 
     def _start(self, loc_to_update):
@@ -183,21 +197,15 @@ class InfoUpdater:
         dev_obj = self.info.curr_device_obj
         dev_index = self.info.curr_dev_index
 
-        if not self.info.control_device_widgets[dev_index]:
+        if not self.info.control_device_widgets[dev_index] and not self.curr_active[dev_index]:
             self._init(curr_page, dev_obj, dev_index)
         while not loc_to_update.is_set():
-            parsed_info = self.info.liquidctl_api.to_dict(
-                dev_obj.get_status()
-            )
-            for hw_name, hw_info in parsed_info.items():
-                if (
-                    hw_name
-                    not in self.info.control_device_widgets[
-                        dev_index]
-                ):
-                    curr_page.insert_widget_signal.emit([hw_name, hw_info])
-                    self._add_widgets_dev_list(hw_name, dev_index)
-            curr_page.update_dev_hw_info.emit(parsed_info)
+            if not self.curr_active[dev_index]:
+                parsed_info = self.info.liquidctl_api.to_dict(
+                    dev_obj.get_status()
+                )
+                self._add_unadded_widgets(parsed_info, curr_page, dev_index)
+                curr_page.update_dev_hw_info.emit(parsed_info)
             loc_to_update.wait(self.pause)
 
     def start(self):
