@@ -8,9 +8,10 @@ class DeviceSelector(main_widgets.ComboBox):
         to_connect,
         items: tuple = [],
     ):
-        super().__init__("device_selector", items)
-        self.currentIndexChanged.connect(
-            lambda: to_connect(self.currentIndex())
+        super().__init__(
+            name="device_selector",
+            items=items,
+            to_connect=to_connect,
         )
 
 

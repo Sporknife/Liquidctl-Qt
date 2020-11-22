@@ -7,33 +7,42 @@ class Button(QtWidgets.QPushButton):
         name: str = "",
         text: str = "",
         to_connect=None,
-        font_color: str = "",
-        button_color: str = "",
+        color=(),  # when button enabled
+        disabled_color=(),  # when button disabled
         font_size: int = 0,
         h_pol=QtWidgets.QSizePolicy.Preferred,
         v_pol=QtWidgets.QSizePolicy.Preferred,
         enabled=True,
+        tooltip="",
     ):
         super().__init__()
+        self.enabled_style = []
         if name:
             self.setObjectName(name)
         self.setText(text)
         if to_connect:
             self.clicked.connect(to_connect)
-        if font_color:
-            style = f"color: rgb{font_color};\n"
-            self.setStyleSheet(style)
-        if button_color:
-            style = (
-                self.styleSheet() + f"border-color: rgb{button_color};\n"
-            )
-            self.setStyleSheet(style)
+        if color:  # sets color for text and buttons border
+            self.enabled_style.append(f"color: rgb{color};")
+        if disabled_color:  # when button is disabled it uses this color
+            self.setStyleSheet(
+                "QPushButton:disabled {color: rgb" + str(disabled_color) + "}\n")
         if font_size:
-            style = self.styleSheet() + f"font-size: {font_size}px;\n"
-            self.setStyleSheet(style)
+            self.enabled_style.append(f"font-size: {font_size}px;")
         self.setSizePolicy(h_pol, v_pol)
         if not enabled:
             self.setEnabled(enabled)
+        if tooltip:
+            self.setToolTip(tooltip)
+        if any((color, font_size)):
+            self._enabled_set_style()
+
+    def _enabled_set_style(self):
+        """Sets style for enabled widget"""
+        list_style = ["QPushButton {", "}"]
+        [list_style.insert(1, style) for style in self.enabled_style if style]
+        curr_style = self.styleSheet()
+        self.setStyleSheet(curr_style + '\n'.join(list_style))
 
 
 class CheckBox(QtWidgets.QCheckBox):
@@ -42,35 +51,19 @@ class CheckBox(QtWidgets.QCheckBox):
         name: str = "",
         text: str = "",
         checked: bool = True,
+        h_pol=QtWidgets.QSizePolicy.Preferred,
+        v_pol=QtWidgets.QSizePolicy.Preferred,
         to_connect=None,
-        pass_status: bool = False,
-        size_policy: list = [
-            QtWidgets.QSizePolicy.Preferred,
-            QtWidgets.QSizePolicy.Preferred,
-        ],
-        to_reset_event=None,
     ):  # pylint: disable=dangerous-default-value
         super().__init__()
+
         if name:
             self.setObjectName(name)
         self.setText(text)
-        self.checked = checked
         if to_connect:
-            if pass_status:
-                self.stateChanged.connect(
-                    lambda: to_connect(self.isChecked())
-                )
-            else:
-                self.stateChanged.connect(to_connect)
-        if size_policy:
-            self.setSizePolicy(size_policy[0], size_policy[1])
+            self.stateChanged.connect(to_connect)
+        self.setSizePolicy(h_pol, v_pol)
         self.setChecked(checked)
-        if to_reset_event:
-            to_reset_event.connect(self.reset)
-
-    @QtCore.pyqtSlot()
-    def reset(self):
-        self.setChecked(self.checked)
 
 
 class ComboBox(QtWidgets.QComboBox):
@@ -81,8 +74,6 @@ class ComboBox(QtWidgets.QComboBox):
         h_pol=QtWidgets.QSizePolicy.Preferred,
         v_pol=QtWidgets.QSizePolicy.Preferred,
         to_connect=None,
-        pass_index=False,
-        to_reset_event=None,
     ):  # pylint: disable=dangerous-default-value
         super().__init__()
         if name:
@@ -91,14 +82,7 @@ class ComboBox(QtWidgets.QComboBox):
             self.addItems(items)
         self.setSizePolicy(h_pol, v_pol)
         if to_connect:
-            if pass_index:
-                self.currentIndexChanged.connect(
-                    lambda: to_connect(self.currentIndex())
-                )
-            else:
-                self.currentIndexChanged(to_connect)
-        if to_reset_event:
-            to_reset_event.connect(self.reset)
+            self.currentIndexChanged.connect(to_connect)
 
 
 class DecisionDialog(QtWidgets.QDialog):
@@ -239,7 +223,7 @@ class HardwareWidget(QtWidgets.QFrame):
                 for i, info in enumerate(hw_info.keys()):
                     self.itemAtPosition(i, 2).widget().setText(
                         str(hw_info.get(info).get("value")
-                        )
+                            )
                     )
                     pass
 
@@ -312,72 +296,29 @@ class Label(QtWidgets.QLabel):
         if not enabled:
             self.setEnabled(enabled)
 
-    @QtCore.pyqtSlot()
-    def reset(self):
-        self.setText(self.text)
-
-
-class Line(QtWidgets.QFrame):
-    def __init__(
-        self,
-        orient: str,
-        h_size_pol = QtWidgets.QSizePolicy.Preferred,
-        v_size_pol = QtWidgets.QSizePolicy.Preferred
-    ):
-        """
-        orient = h/v
-        """
-        super().__init__()
-        if orient == "h":
-            self.setFrameShape(QtWidgets.QFrame.HLine)
-        else:
-            self.setFrameShape(QtWidgets.QFrame.VLine)
-        self.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.setSizePolicy(h_size_pol, v_size_pol)
-
-
 class Slider(QtWidgets.QSlider):
     def __init__(
         self,
-        name: str = "",
-        orientation=QtCore.Qt.Horizontal,
-        value: int = 0,
-        h_size_pol = QtWidgets.QSizePolicy.Preferred,
-        v_size_pol = QtWidgets.QSizePolicy.Preferred,
+        name="",
+        value=0,
+        min_max=[0, 100],
+        h_pol=QtWidgets.QSizePolicy.Preferred,
+        v_pol=QtWidgets.QSizePolicy.Preferred,
         to_connect=None,
-        pass_value=False,
-        min_max: list = [0, 100],
-        to_reset_event=None,
         enabled=True,
+        orientation=QtCore.Qt.Horizontal
     ):
         super().__init__()
-        self.setObjectName(name)
-        self.setOrientation(orientation)
+        if name:
+            self.setObjectName(name)
         self.setValue(value)
-        self.setSizePolicy(h_size_pol, v_size_pol)
-        if to_connect:
-            if pass_value:
-                self.valueChanged.connect(lambda: to_connect(self.value()))
-            else:
-                self.valueChanged.connect(to_connect)
         self.setMinimum(min_max[0])
         self.setMaximum(min_max[1])
-
-        if to_reset_event:
-            print("connected reset event")
-            to_reset_event.connect(self.reset)
-
-        if not enabled:
-
-            self.setEnabled(enabled)
-
-    @QtCore.pyqtSlot()
-    def reset(self):
-        self.setValue(0)
-
-    @QtCore.pyqtSlot(bool)
-    def mode(self, mode):
-        self.setEnabled(mode)
+        self.setSizePolicy(h_pol, v_pol)
+        if to_connect:
+            self.valueChanged.connect(to_connect)
+        self.setOrientation(orientation)
+        self.setEnabled(enabled)
 
 
 class Spacer(QtWidgets.QSpacerItem):

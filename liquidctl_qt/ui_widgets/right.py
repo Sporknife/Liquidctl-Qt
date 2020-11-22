@@ -5,11 +5,14 @@ from ui_widgets import main_widgets, control
 class Stack(QtWidgets.QFrame):
     def __init__(self, info_obj):
         super().__init__()
+        self.info = info_obj
+        self._init()
+
+    def _init(self):
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Expanding,
         )
-        self.info = info_obj
         self._style()
         self._layout()
         self.info.signals.device_changed_signal.connect(self.set_page)
@@ -22,11 +25,11 @@ class Stack(QtWidgets.QFrame):
     def _layout(self):
         box = QtWidgets.QVBoxLayout()
         self.stacked_widget = main_widgets.StackedWidget()
-        self.add_pages()
+        self._add_pages()
         box.addWidget(self.stacked_widget)
         self.setLayout(box)
 
-    def add_pages(self):
+    def _add_pages(self):
         for _ in self.info.DEVICES_LIST:
             self.stacked_widget.addWidget(StackPage())
 
@@ -62,7 +65,7 @@ class StackPage(QtWidgets.QScrollArea):
     @QtCore.pyqtSlot(dict)
     def add_widgets(self, hw_info):
         for hw_name in hw_info.keys():
-            if "Fan" in hw_name :
+            if "Fan" in hw_name:
                 self.vbox.addWidget(
                     control.FanWidget(
                         hw_name,
@@ -79,7 +82,7 @@ class StackPage(QtWidgets.QScrollArea):
     def insert_widget(self, hw_data):
         hw_name = hw_data[0]
         hw_info = hw_data[1]
-        if "Fan" in hw_name :
+        if "Fan" in hw_name:
             self.vbox.insertWidget(
                 0,
                 control.FanWidget(

@@ -99,7 +99,7 @@ class Info:
 
     def _liquidctl_api(self):
         self.liquidctl_api = liquidctl_api.LiquidctlApi()
-        self.DEVICES_DICT = self.liquidctl_api.devices_dict # pylint: disable=invalid-name
+        self.DEVICES_DICT = self.liquidctl_api.devices_dict  # pylint: disable=invalid-name
         self.DEVICES_LIST = self.liquidctl_api.devices_list  # pylint: disable=invalid-name
 
     @property
@@ -134,7 +134,8 @@ class Info:
 
 
 class InfoUpdater:
-    __slots__ = ("info", "pause", "widgets_created", "do_update", "curr_active")
+    __slots__ = ("info", "pause", "widgets_created",
+                 "do_update", "curr_active")
 
     def __init__(self, info, pause=4):
         self.info = info
@@ -154,8 +155,8 @@ class InfoUpdater:
         elif isinstance(hw_name, tuple):
             for name in hw_name:
                 self.info.control_device_widgets[
-                dev_index
-            ].append(name)
+                    dev_index
+                ].append(name)
 
     def _add_unadded_widgets(self, parsed_info, curr_page, dev_index):
         """Checks for unadded hardware widgets"""
@@ -184,7 +185,6 @@ class InfoUpdater:
         self._add_widgets_dev_list(tuple(parsed_info.keys()), dev_index)
         self.curr_active[dev_index] = False
 
-
     def _start(self, loc_to_update):
         """
         updates hw info of currently selected device
@@ -197,7 +197,10 @@ class InfoUpdater:
         dev_obj = self.info.curr_device_obj
         dev_index = self.info.curr_dev_index
 
-        if not self.info.control_device_widgets[dev_index] and not self.curr_active[dev_index]:
+        if (
+            not self.info.control_device_widgets[dev_index] and
+            not self.curr_active[dev_index]
+        ):
             self._init(curr_page, dev_obj, dev_index)
         while not loc_to_update.is_set():
             if not self.curr_active[dev_index]:
