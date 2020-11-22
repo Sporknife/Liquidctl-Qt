@@ -43,6 +43,7 @@ class Handler(QtCore.QObject):
 
 
 class MainWindow(QtWidgets.QMainWindow):
+    __slots__ = ("info",)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.info = Info(self)
@@ -50,7 +51,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _main_window_init(self):
         self.setWindowTitle("Liquidctl-Qt")
-        self.show()
         self.setCentralWidget(self._layout())
 
     def _layout(self):

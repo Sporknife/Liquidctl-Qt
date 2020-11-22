@@ -3,6 +3,8 @@ from ui_widgets import main_widgets, control
 
 
 class Stack(QtWidgets.QFrame):
+    __slots__ = ("info",)
+
     def __init__(self, info_obj):
         super().__init__()
         self.info = info_obj
@@ -39,6 +41,8 @@ class Stack(QtWidgets.QFrame):
 
 
 class StackPage(QtWidgets.QScrollArea):
+    __slots__ = ("vbox",)
+
     update_dev_hw_info = QtCore.pyqtSignal(dict, name="info-updater")
     add_widgets_signal = QtCore.pyqtSignal(dict, name="widgets-adder")
     insert_widget_signal = QtCore.pyqtSignal(list, name="widget-inserter")
@@ -95,6 +99,8 @@ class StackPage(QtWidgets.QScrollArea):
 
 
 class MainRight(QtWidgets.QWidget):
+    __slots__ = ("info", "stack_frame")
+
     def __init__(self, info_obj):
         super().__init__()
         self.info = info_obj

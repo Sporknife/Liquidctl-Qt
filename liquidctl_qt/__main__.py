@@ -13,4 +13,5 @@ If you need ANY help or if you would report an issue use:
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     main_window = MainWindow()
+    main_window.show()
     app.exec_()

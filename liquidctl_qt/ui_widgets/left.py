@@ -18,8 +18,10 @@ class DeviceSelector(main_widgets.ComboBox):
 class DeviceInfo(QtWidgets.QGridLayout):
     def __init__(self, info_list: list, update_singnal: QtCore.pyqtSignal):
         super().__init__()
+        self._init(info_list, update_singnal)
+
+    def _init(self, info_list, update_singnal):
         self._add_labels(info_list)
-        update_singnal.connect(self.update_info_labels)
         self.addItem(
             main_widgets.Spacer(
                 h_pol=QtWidgets.QSizePolicy.Fixed,
@@ -28,23 +30,27 @@ class DeviceInfo(QtWidgets.QGridLayout):
             0,
             1,
         )
+        update_singnal.connect(self.update_info_labels)
 
     def _add_labels(self, info_list: list):
         for i, info in enumerate(info_list):
-            type_label = main_widgets.Label(text=self.clean_text(info[0]))
+            type_label = main_widgets.Label(text=self._clean_text(info[0]))
             self.addWidget(type_label, i, 0)
-            self.addWidget(self.value_label(info[1]), i, 3)
+            self.addWidget(self._value_label(info[1]), i, 3)
 
-    def clean_text(self, text):
+    def _clean_text(self, text):
+        """removes certains things from string"""
         return text.replace("_", " ").capitalize() + ":"
 
-    def value_label(self, info):
+    def _value_label(self, info):
+        """creates label widget"""
         if isinstance(info, bytes):
             info = info.decode()
         return main_widgets.Label(text=str(info))
 
     @QtCore.pyqtSlot(list)
     def update_info_labels(self, info_list):
+        """updates labels when selected device is changed"""
         for i, info in enumerate(info_list[0]):
             text = info[1]
             if isinstance(text, bytes):

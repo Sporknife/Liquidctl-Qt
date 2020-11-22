@@ -2,6 +2,8 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 
 class Button(QtWidgets.QPushButton):
+    __slots__ = ("enabled_style",)
+
     def __init__(
         self,
         name: str = "",
@@ -270,6 +272,8 @@ class HBox(QtWidgets.QHBoxLayout):
 
 
 class Label(QtWidgets.QLabel):
+    __slots__ = ("text",)
+
     def __init__(
         self,
         name: str = "",
@@ -295,6 +299,7 @@ class Label(QtWidgets.QLabel):
             )
         if not enabled:
             self.setEnabled(enabled)
+
 
 class Slider(QtWidgets.QSlider):
     def __init__(
