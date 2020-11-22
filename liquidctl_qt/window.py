@@ -11,7 +11,7 @@ from threading import Thread, Event
 class Signals(QtCore.QObject):
     """This class contains signal/s"""
 
-    device_changed_signal = QtCore.pyqtSignal(list, name="device-changed")
+    device_changed_signal = QtCore.pyqtSignal(dict)
 
 
 class Handler(QtCore.QObject):
@@ -28,7 +28,10 @@ class Handler(QtCore.QObject):
         self.info.dev_hw_inf_updater.stop()
         self.info.curr_dev_index = new_index
         self.info.signals.device_changed_signal.emit(
-            [self.info.curr_dev_info, new_index]
+            {
+                "device_info": self.info.curr_dev_info,
+                "device_index": new_index
+            }
         )
         self.info.main_right.stack_frame.stacked_widget.setCurrentIndex(
             new_index
@@ -44,6 +47,7 @@ class Handler(QtCore.QObject):
 
 class MainWindow(QtWidgets.QMainWindow):
     __slots__ = ("info",)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.info = Info(self)

@@ -17,6 +17,7 @@ class DeviceSelector(main_widgets.ComboBox):
 
 class DeviceInfo(QtWidgets.QGridLayout):
     __slots__ = ("info",)
+
     def __init__(self, info_obj):
         super().__init__()
         self.info = info_obj
@@ -50,17 +51,17 @@ class DeviceInfo(QtWidgets.QGridLayout):
             info = info.decode()
         return main_widgets.Label(text=str(info))
 
-    @QtCore.pyqtSlot(list)
-    def update_info_labels(self, info_list):
+    @QtCore.pyqtSlot(dict)
+    def update_info_labels(self, info_dict):
         """updates labels when selected device is changed"""
-        for i, info in enumerate(info_list[0]):
-            text = info[1]
-            if isinstance(text, bytes):
-                text = text.decode()
+        for i, labels_text in enumerate(info_dict.get("device_info")):
+            value_text = labels_text[1]
+            if isinstance(value_text, bytes):
+                value_text = value_text.decode()
             value_label = self.itemAtPosition(i, 3)
             if value_label:
                 widget = value_label.widget()
-                widget.setText(str(text))
+                widget.setText(str(value_text))
 
 
 class MainLeft(QtWidgets.QWidget):

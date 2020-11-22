@@ -35,9 +35,11 @@ class Stack(QtWidgets.QFrame):
         for _ in self.info.DEVICES_LIST:
             self.stacked_widget.addWidget(StackPage())
 
-    @QtCore.pyqtSlot(list)
-    def set_page(self, info_list):
-        self.stacked_widget.setCurrentIndex(info_list[1])
+    @QtCore.pyqtSlot(dict)
+    def set_page(self, info_dict):
+        self.stacked_widget.setCurrentIndex(
+            info_dict.get("device_index")
+        )
 
 
 class StackPage(QtWidgets.QScrollArea):
