@@ -16,12 +16,14 @@ class DeviceSelector(main_widgets.ComboBox):
 
 
 class DeviceInfo(QtWidgets.QGridLayout):
-    def __init__(self, info_list: list, update_singnal: QtCore.pyqtSignal):
+    __slots__ = ("info",)
+    def __init__(self, info_obj):
         super().__init__()
-        self._init(info_list, update_singnal)
+        self.info = info_obj
+        self._init()
 
-    def _init(self, info_list, update_singnal):
-        self._add_labels(info_list)
+    def _init(self):
+        self._add_labels()
         self.addItem(
             main_widgets.Spacer(
                 h_pol=QtWidgets.QSizePolicy.Fixed,
@@ -30,10 +32,10 @@ class DeviceInfo(QtWidgets.QGridLayout):
             0,
             1,
         )
-        update_singnal.connect(self.update_info_labels)
+        self.info.signals.device_changed_signal.connect(self.update_info_labels)
 
-    def _add_labels(self, info_list: list):
-        for i, info in enumerate(info_list):
+    def _add_labels(self):
+        for i, info in enumerate(self.info.curr_dev_info):
             type_label = main_widgets.Label(text=self._clean_text(info[0]))
             self.addWidget(type_label, i, 0)
             self.addWidget(self._value_label(info[1]), i, 3)
@@ -78,10 +80,7 @@ class MainLeft(QtWidgets.QWidget):
         )
 
     def _set_device_info(self):
-        self.device_info = DeviceInfo(
-            info_list=self.info.curr_dev_info,
-            update_singnal=self.info.signals.device_changed_signal,
-        )
+        self.device_info = DeviceInfo(self.info)
 
     def layout(self):
         vbox = main_widgets.VBox()
