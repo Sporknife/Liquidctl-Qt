@@ -75,6 +75,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 class Info:
+    """Contains variables that need to be accessed from anywhere"""
     __slots__ = (
         "control_device_widgets",
         "curr_dev_index",
@@ -138,6 +139,7 @@ class Info:
 
 
 class InfoUpdater:
+    """Creates, updates device hardware widgets"""
     __slots__ = ("info", "pause", "widgets_created",
                  "do_update", "curr_active")
 

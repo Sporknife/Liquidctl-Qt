@@ -1,6 +1,5 @@
-from os import path, makedirs, fsencode
+from os import path, makedirs
 from glob import glob
-
 from pandas import DataFrame
 from numpy import int8 as np_int8
 
@@ -16,6 +15,9 @@ class Profiles:
         "LED_PATH")
 
     def __init__(self):
+        self._init()
+
+    def _init(self):
         PROJECT_ROOT_NAME = "Liquidctl-Qt"  # pylint: disable=invalid-name
         self.PROFILES_ROOT = path.join(   # pylint: disable=invalid-name
             path.abspath(path.dirname(__file__)).split(

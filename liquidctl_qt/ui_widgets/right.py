@@ -3,6 +3,7 @@ from ui_widgets import main_widgets, control
 
 
 class Stack(QtWidgets.QFrame):
+    """Widget that contains StackedWidget"""
     __slots__ = ("info",)
 
     def __init__(self, info_obj):

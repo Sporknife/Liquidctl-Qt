@@ -3,6 +3,7 @@ from liquidctl_api import fake_devices
 
 
 class LiquidctlApi:
+    """Simple "API" for accessing devices"""
     __slots__ = ("devices", "devices_list", "devices_dict")
 
     def __init__(self):

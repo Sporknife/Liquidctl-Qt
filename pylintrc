@@ -23,7 +23,7 @@ persistent=no
 load-plugins=
 
 # Use multiple processes to speed up Pylint.
-jobs=4
+jobs=6
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
@@ -72,12 +72,10 @@ disable=abstract-method,
         coerce-method,
         delslice-method,
         div-method,
-        duplicate-code,
         eq-without-hash,
         execfile-builtin,
         file-builtin,
-        filter-builtin-not-iterating,
-        fixme,
+        filter-builtin-not-iterating,1
         getslice-method,
         global-statement,
         hex-method,
@@ -140,7 +138,6 @@ disable=abstract-method,
         too-many-public-methods,
         too-many-return-statements,
         too-many-statements,
-        trailing-newlines,
         unichr-builtin,
         unicode-builtin,
         unnecessary-pass,
@@ -152,7 +149,6 @@ disable=abstract-method,
         wrong-import-order,
         xrange-builtin,
         zip-builtin-not-iterating,
-	bad-indentation,
 
 [REPORTS]
 
@@ -298,7 +294,7 @@ max-module-lines=99999
 # spaces.  Google's externaly-published style guide says 4, consistent with
 # PEP 8.  Here, we use 2 spaces, for conformity with many open-sourced Google
 # projects (like TensorFlow).
-indent-string='  '
+indent-string='    '
 
 # Number of spaces of indent required inside a hanging  or continued line.
 indent-after-paren=4

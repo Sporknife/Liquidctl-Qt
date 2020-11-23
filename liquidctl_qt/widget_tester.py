@@ -1,5 +1,5 @@
 from window import MainWindow
-from ui_widgets import right, main_widgets, profile_editor, control
+from ui_widgets import control
 from PyQt5.QtWidgets import QApplication
 import sys
 
@@ -12,8 +12,8 @@ if select == "main":
 
 elif select == "profile":
     app = QApplication(sys.argv)
-    window = profile_editor.ProfileEditorDialog("test fan")
-    window.show()
+    window = control.ProfileEditorDialog("test fan")
+    window.open()
     app.exec_()
 
 elif select == "fan":

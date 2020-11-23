@@ -28,7 +28,8 @@ class Button(QtWidgets.QPushButton):
             self.enabled_style.append(f"color: rgb{color};")
         if disabled_color:  # when button is disabled it uses this color
             self.setStyleSheet(
-                "QPushButton:disabled {color: rgb" + str(disabled_color) + "}\n")
+                "QPushButton:disabled {color: rgb"
+                + str(disabled_color) + "}\n")
         if font_size:
             self.enabled_style.append(f"font-size: {font_size}px;")
         self.setSizePolicy(h_pol, v_pol)
@@ -42,9 +43,11 @@ class Button(QtWidgets.QPushButton):
     def _enabled_set_style(self):
         """Sets style for enabled widget"""
         list_style = ["QPushButton {", "}"]
-        [list_style.insert(1, style) for style in self.enabled_style if style]
+        [  # pylint: disable=expression-not-assigned
+            list_style.insert(1, style) for style in self.enabled_style if style
+        ]
         curr_style = self.styleSheet()
-        self.setStyleSheet(curr_style + '\n'.join(list_style))
+        self.setStyleSheet(curr_style + "\n".join(list_style))
 
 
 class CheckBox(QtWidgets.QCheckBox):
@@ -88,6 +91,8 @@ class ComboBox(QtWidgets.QComboBox):
 
 
 class DecisionDialog(QtWidgets.QDialog):
+    """Dialog for user action"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setWindowTitle("Decisions...")

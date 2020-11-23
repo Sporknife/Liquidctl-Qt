@@ -4,6 +4,7 @@ from ui_widgets import main_widgets, profile_editor
 
 class FanWidget(main_widgets.HardwareWidget):
     """Fan widget which Displays basic info"""
+
     def __init__(
         self,
         fan_name: str,
@@ -32,7 +33,7 @@ class ProfileEditorDialog(QtWidgets.QDialog):
         self.setModal(True)
         self.setWindowTitle(name)
         layout = main_widgets.HBox()
-        layout.addWidget(profile_editor.ProfileEditor(name, ""))
+        layout.addWidget(profile_editor.ProfileEditor(name))
         self.setLayout(layout)
 
 
