@@ -91,30 +91,26 @@ class ComboBox(QtWidgets.QComboBox):
 
 
 class DecisionDialog(QtWidgets.QDialog):
-    """Dialog for user action"""
+    """Dialog for user action, Message + Y/N"""
 
-    def __init__(self, *args, **kwargs):
+    # pylint: disable=invalid-name
+    def __init__(self, MSG_TEXT, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setWindowTitle("Decisions...")
-        self.setModal(True)
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
         self.setWindowFlags(
             self.windowFlags() &
             ~QtCore.Qt.WindowCloseButtonHint &
             ~QtCore.Qt.WindowContextHelpButtonHint
         )
-        self.setLayout(self._layout())
+        self.setLayout(self._layout(MSG_TEXT))
         width, height = int(self.width()), int(self.height())
 
         self.setMaximumSize(width, height)
 
-    def _layout(self):
+    def _layout(self, MSG_TEXT):  # pylint: disable=invalid-name
         vbox = VBox()
         # pylint: disable=invalid-name
-        MSG_TEXT = (
-            "Would you like to exit the application\n"
-            + "(and loose your unsaved/unapplied settings) ?"
-        )
         msg_label = Label(
             text=MSG_TEXT,
             aligment=QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter,
@@ -139,8 +135,8 @@ class DecisionDialog(QtWidgets.QDialog):
 
 class HardwareWidget(QtWidgets.QFrame):
     """
-    Hardware widget that shows you basic info about specific hardware
-    and allows you to change some settings
+    Hardware widget that shows basic info about specific hardware
+    and allows to change some settings
     """
     __slots__ = ("hw_info_obj",)
 
@@ -310,8 +306,8 @@ class Slider(QtWidgets.QSlider):
     def __init__(
         self,
         name="",
-        value=0,
-        min_max=[0, 100],
+        min_value=0,
+        max_value=100,
         h_pol=QtWidgets.QSizePolicy.Preferred,
         v_pol=QtWidgets.QSizePolicy.Preferred,
         to_connect=None,
@@ -321,9 +317,9 @@ class Slider(QtWidgets.QSlider):
         super().__init__()
         if name:
             self.setObjectName(name)
-        self.setValue(value)
-        self.setMinimum(min_max[0])
-        self.setMaximum(min_max[1])
+        self.setValue(min_value)
+        self.setMinimum(min_value)
+        self.setMaximum(max_value)
         self.setSizePolicy(h_pol, v_pol)
         if to_connect:
             self.valueChanged.connect(to_connect)

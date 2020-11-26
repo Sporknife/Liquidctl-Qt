@@ -6,7 +6,7 @@ class DeviceSelector(main_widgets.ComboBox):
     def __init__(
         self,
         to_connect,
-        items: tuple = [],
+        items: tuple,
     ):
         super().__init__(
             name="device_selector",

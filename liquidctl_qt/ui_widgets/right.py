@@ -44,6 +44,7 @@ class Stack(QtWidgets.QFrame):
 
 
 class StackPage(QtWidgets.QScrollArea):
+    """ScrollAre that allows to view multiple device hardware widgets"""
     __slots__ = ("vbox",)
 
     update_dev_hw_info = QtCore.pyqtSignal(dict, name="info-updater")
@@ -102,6 +103,7 @@ class StackPage(QtWidgets.QScrollArea):
 
 
 class MainRight(QtWidgets.QWidget):
+    """Main class & widget for right side"""
     __slots__ = ("info", "stack_frame")
 
     def __init__(self, info_obj):

@@ -66,7 +66,11 @@ class MainWindow(QtWidgets.QMainWindow):
         return central_widget
 
     def closeEvent(self, close_event):  # pylint: disable=invalid-name
-        dialog = main_widgets.DecisionDialog(self)
+        DIALOG_MSG = (  # pylint: disable=invalid-name
+            "Would you like to exit the application\n" +
+            "(and loose your unsaved/unapplied settings) ?"
+        )
+        dialog = main_widgets.DecisionDialog(DIALOG_MSG)
         if dialog.exec_():
             self.info.dev_hw_inf_updater.stop()
             close_event.accept()
