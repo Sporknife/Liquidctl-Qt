@@ -1,5 +1,7 @@
 from PyQt5 import QtWidgets, QtCore
 from ui_widgets import main_widgets
+import pandas as pd
+import numpy as np
 
 
 class Signals:
@@ -21,6 +23,7 @@ class Signals:
                 widget = witems.itemAt(i).widget()
                 widget.setEnabled(False)
                 self.mode_signal.connect(widget.setEnabled)
+        return witems
 
     def reset_connect(self, witems, layout=False):
         """Connects widgets or widgets in a layout to reset signal"""
@@ -31,6 +34,7 @@ class Signals:
             for i in range(witems.count()):
                 widget = witems.itemAt(i).widget()
                 self.reset_signal.connect(widget.reset)
+        return witems
 
 
 class WidgetAdder:
@@ -44,13 +48,18 @@ class WidgetAdder:
         self.class_obj = class_obj  # just pass "self"
         self.layout = layout_obj  # layout to which widgets should be added
 
-    def widget_adder(self, name: str, widget, add_var=True):
+    def witem_adder(self, name="", widget=None, item=None):
         # name = name for __settattr__
         # widget = widget object
-        if add_var:
-            self.class_obj.__setattr__(name, widget)
-        self.layout.addWidget(widget)
-        return widget
+        if widget:
+            if name:
+                self.class_obj.__setattr__(name, widget)
+            self.layout.addWidget(widget)
+            return widget
+        elif item:
+            if name:
+                self.class_obj.__setattr__(name, item)
+            self.layout.addItem(item)
 
 
 class ProfileEditor(QtWidgets.QWidget):
@@ -58,15 +67,11 @@ class ProfileEditor(QtWidgets.QWidget):
     __slots__ = ("signals",)
 
     """Steps signals"""
-    step_change_signal = QtCore.pyqtSignal(list)  # edits step values
-    step_activated_signal = QtCore.pyqtSignal()  # enable step controls
-    add_step_signal = QtCore.pyqtSignal(int)  # when a step is added
-    remove_step_signal = QtCore.pyqtSignal()  # when a step is removed
-    # enables/disables step ctrls when both sliders are changed
-    step_ctrl_activate_signal = QtCore.pyqtSignal(dict)
+    add_step_signal = QtCore.pyqtSignal()  # add a step
+    update_step_signal = QtCore.pyqtSignal()  # update current step
+    remove_step_signal = QtCore.pyqtSignal()  # remove step
     """Sliders signals"""
     set_sliders_value_signal = QtCore.pyqtSignal(int, int)
-
     """Profile signals"""
     # contains data about newly selected profile (if static profile, etc.)
     profile_changed_signal = QtCore.pyqtSignal(dict)  # when profile is changed
@@ -89,10 +94,11 @@ class ProfileEditor(QtWidgets.QWidget):
 
     def _left(self):
         vbox = main_widgets.VBox()
-        vbox.addItem(ProfileModeChooser(self))
-        vbox.addWidget(StepsViewer(self, model=None))
+        witem_adder = WidgetAdder(self, vbox).witem_adder
+        witem_adder(item=ProfileModeChooser(self))
+        witem_adder("steps_viewer", widget=StepsViewer(self, model=None))
         vbox.addItem(StepControl(self))
-        vbox.addItem(TempDutySliders(self))
+        witem_adder("tempduty_sliders", item=TempDutySliders(self))
         vbox.addItem(ProfileCtrl(self))
         return vbox
 
@@ -149,6 +155,9 @@ class ProfileModeChooser(main_widgets.HBox):
 
 
 class StepsViewer(QtWidgets.QTableView):
+    """
+    Allows you to view steps and their values
+    """
     __slots__ = ("profile_editor",)
 
     def __init__(self, prof_editor_obj: ProfileEditor,
@@ -170,6 +179,8 @@ class StepsViewer(QtWidgets.QTableView):
     def _connect_signals(self):
         self.profile_editor.signals.mode_connect((self,))
         self.profile_editor.remove_step_signal.connect(self.remove_step)
+        self.profile_editor.update_step_signal.connect(self.update_step)
+        self.profile_editor.add_step_signal.connect(self.add_step)
 
     def _save_models(self):  # fixme: impliment saving models in a dict
         pass
@@ -184,77 +195,192 @@ class StepsViewer(QtWidgets.QTableView):
             QtWidgets.QHeaderView.Stretch
         )
         self.verticalHeader().setVisible(False)
-        pass
 
     @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
-    def currentChanged(self, current, previous):  # pylint: disable=invalid-name
+    # pylint: disable=invalid-name, unused-argument
+    def currentChanged(self, current, previous):
         """when currently selected is changed by the program or user"""
-        row = current.row()
-        model = self.model()
-        duty = int(model.data(model.index(row, 1), QtCore.Qt.DisplayRole))
-        temp = int(model.data(model.index(row, 0), QtCore.Qt.DisplayRole))
-        self.profile_editor.set_sliders_value_signal.emit(duty, temp)
+        self.update_sliders()
 
-    @QtCore.pyqtSlot(dict)
-    def add_step(self, data):
+    @QtCore.pyqtSlot()
+    def add_step(self):
         """Inserts step accordingly to temperature"""
-        print("add step - StepsViewer.add_step")
-        raise NotImplementedError
+        temp, duty, df_new = self.get_info()
+        iloc_with_temp = self.model().get_iloc(temp)
+        DIALOG_MSG = (  # pylint: disable=invalid-name
+            "There is a step with the same temprature" +
+            "\nWould you like yo overwrite it?"
+        )
+        decision_dialog = main_widgets.DecisionDialog(DIALOG_MSG)
 
-    @QtCore.pyqtSlot(dict)
-    def update_step(self, data):
-        """Updates currently selected step to values in the sliders"""
-        print("add step - StepsViewer.update_step")
+        # if a step with same temp. value exists and if so get user input
+        if iloc_with_temp is not None and decision_dialog.exec_():
+            self.model().updateRow(temp, duty, iloc_int=iloc_with_temp)
+            self.selectRow(iloc_with_temp)  # sets active row
+        else:
+            iloc_for_row = self.model().get_iloc_for_row(temp)
+            self.model().addRow(iloc_for_row, df_new)  # adds the new row
+            self.selectRow(iloc_for_row)  # sets active row
+
+    @QtCore.pyqtSlot()
+    def update_step(self):
+        """
+        Updates currently selected step to values specified in sliders
+        """
+        temp, duty, _ = self.get_info()
+        current_index = self.currentIndex()
+        if current_index.isValid():
+            current_row_iloc = current_index.row()
+            DIALOG_MSG = (  # pylint: disable=invalid-name
+                "There is a step with the same temprature" +
+                "\nWould you like yo overwrite it?"
+            )
+            decision_dialog = main_widgets.DecisionDialog(DIALOG_MSG)
+            iloc_with_temp = self.model().get_iloc(temp)
+
+            # if a step with same temp. value exists and if so get user input
+            if iloc_with_temp is not None and decision_dialog.exec_():
+                # remove row with the same temp. value
+                self.model().removeRow(iloc_with_temp)
+                # update current row
+                self.model().updateRow(temp, duty, iloc_int=current_row_iloc)
+                self.selectRow(current_row_iloc)  # sets active row
+
+            # if a step with the same temp. values doesn't exist
+            else:
+                self.model().updateRow(temp, duty, iloc_int=current_row_iloc)
+                self.selectRow(self.model().get_iloc(temp))  # sets active row
 
     @QtCore.pyqtSlot()
     def remove_step(self):
         """Removes currently selected step"""
-        print("remove step - StepsViewer.update_step")
-        raise NotImplementedError
+        if self.currentIndex().isValid():
+            self.model().removeRow(
+                self.currentIndex().row()
+            )
+            self.update_sliders()
+
+    def get_info(self):
+        """
+        Returns temp, duty, and a new df for adding a new row in the original df
+        """
+        temp, duty = (
+            self.profile_editor.tempduty_sliders.get_values()
+        )
+        df_new = pd.DataFrame(
+            [[temp, duty]],
+            columns=["Temperature", "Duty"],
+            dtype=np.int8
+        )
+        return temp, duty, df_new
+
+    def update_sliders(self):
+        # fixme: idk if word "fetching" is used properly
+        """
+        Updates sliders by getting data from the DataFrame object
+        """
+        index_model = self.currentIndex()
+        if index_model.isValid():
+            temp, duty = self.model().df.iloc[index_model.row()].to_list()
+            self.profile_editor.set_sliders_value_signal.emit(temp, duty)
+
+    def index_at_pos(self, xpos, ypos):
+        point = QtCore.QPoint(xpos, ypos)
+        return self.indexAt(point)
 
     def _set_model(self):  # fixme: delete this !
         # this is for testing purposes only
-        from pandas import DataFrame
-        data_frame = DataFrame(
+        df = pd.DataFrame(
             [[i, i + 4] for i in range(0, 50)],
-            columns=["Temperature", "Duty"]
+            columns=["Temperature", "Duty"],
+            dtype=np.int8
         )
-        self.setModel(TempDutyModel(data_frame, self))
+        self.setModel(TempDutyModel(df))
 
 
 class TempDutyModel(QtCore.QAbstractTableModel):
-    """Model that is using pandas.DataFrame"""
-    __slots__ = ("data_frame",)
+    """
+    Model that is using pandas.DataFrame
+    """
+    __slots__ = ("df",)
 
-    def __init__(self, data_frame, view):
+    def __init__(self, df):
         super().__init__()
-        self.data_frame = data_frame
+        self.df = df
 
+    # pylint doesn't detect the arg is used, pylint: disable=unused-argument
     def data(self, index, role):
         if role == QtCore.Qt.DisplayRole:
-            value = self.data_frame.iloc[index.row(), index.column()]
-            return str(value)
+            value = self.df.iloc[index.row(), index.column()]
+            return str(int(value))  # i need to do this when updating a value
 
-    def rowCount(self, index):  # pylint: disable=invalid-name
-        return self.data_frame.shape[0]
+    def rowCount(self, args):  # pylint: disable=invalid-name
+        return self.df.shape[0]
 
-    def columnCount(self, index):  # pylint: disable=invalid-name
-        return self.data_frame.shape[1]
+    def columnCount(self, args):  # pylint: disable=invalid-name
+        return self.df.shape[1]
 
     # pylint: disable=invalid-name
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
-                return str(self.data_frame.columns[section])
+                return str(self.df.columns[section])
             if orientation == QtCore.Qt.Vertical:
-                return str(self.data_frame.index[section])
+                return str(self.df.index[section])
 
-    def removeRow(self, row, parent):  # pylint: disable=invalid-name
-        self.beginRemoveRows(parent, row, row)
-        self.rowsAboutToBeRemoved.emit(parent, row, row)
-        self.data_frame.index.delete(self.data_frame.iloc[row])
+    def removeRow(self, iloc):  # pylint: disable=invalid-name
+        parent = QtCore.QModelIndex()
+        self.beginRemoveRows(parent, iloc, iloc)
+        self.df = self.df.drop(self.df.index[iloc])
         self.dataChanged.emit(parent, parent)
         self.endRemoveRows()
+
+    # pylint: disable=invalid-name
+    def addRow(self, iloc, df_new):
+        self.beginInsertRows(QtCore.QModelIndex(), iloc, iloc)
+        self.df = self.df.append(
+            df_new, ignore_index=True).sort_values(by="Temperature")
+        self.endInsertRows()
+
+    def updateRow(self, temp, duty, loc_int=None, iloc_int=None):  # pylint: disable=invalid-name
+        if loc_int is not None:
+            self.df.loc[loc_int] = [temp, duty]
+            self.df.sort_values(by="Temperature", inplace=True)
+        elif iloc_int is not None:
+            self.df.iloc[iloc_int] = [temp, duty]
+            self.df.sort_values(by="Temperature", inplace=True)
+
+    def get_loc(self, temp):
+        """
+        Returns loc (ID which multple rows can have) with a specific temp. value
+        """
+        loc = self.df.index[self.df["Temperature"] == temp].to_list()
+        if loc:
+            return loc[0]
+        return None
+
+    def get_iloc(self, temp):
+        """
+        Returns iloc (row number) with a specific temp. value
+        """
+        iloc = (self.df["Temperature"] == temp)
+        if iloc.any():
+            return iloc.to_list().index(True)
+        return None
+
+    def get_iloc_for_row(self, temp):
+        """
+        Gets iloc for not yet existing new row with a specific temp.
+        It finds iloc where the row should be placed.
+        """
+        # list of all temps. higher than temp (from function arg)
+        iloc_for_row_list = (self.df["Temperature"] > temp).to_list()
+        try:
+            return iloc_for_row_list.index(True)
+
+        # if True is not found it means the row needed to be added is last row
+        except ValueError:
+            return self.rowCount(None)
 
 
 class StepControl(main_widgets.VBox):
@@ -266,7 +392,7 @@ class StepControl(main_widgets.VBox):
         self.profile_editor = prof_editor_obj
         self._layout()
         self.profile_editor.signals.mode_connect(
-            (self.header_label, self.add_btn)
+            (self.header_label,)
         )
 
     def _layout(self):
@@ -283,57 +409,47 @@ class StepControl(main_widgets.VBox):
                 height=10
             )
         )
-        self.addItem(self._ctrl_btns())
+        self.addItem(
+            self.profile_editor.signals.mode_connect(
+                self._ctrl_btns(),
+                layout=True
+            )
+        )
 
     def _ctrl_btns(self):
         self.btn_layout = main_widgets.HBox()
-        widget_adder = WidgetAdder(self, self.btn_layout)
+        witem_adder = WidgetAdder(self, self.btn_layout)
 
         ADD_TOOLIP = "Add step"  # pylint: disable=invalid-name
         UPDATE_TOOLIP = "Apply values to current step"  # pylint: disable=invalid-name
         REMOVE_TOOLIP = "Remove/Delete current step"  # pylint: disable=invalid-name
-        widget_adder.widget_adder(
+        witem_adder.witem_adder(
             "add_btn",
             main_widgets.Button(
                 text="Add",
-                to_connect=self.add_step,
+                to_connect=self.profile_editor.add_step_signal.emit,
                 tooltip=ADD_TOOLIP,
             )
         )
-        widget_adder.widget_adder(
+        witem_adder.witem_adder(
             "update_btn",
             main_widgets.Button(
                 text="Update",
-                to_connect=self.update_step,
+                to_connect=self.profile_editor.update_step_signal.emit,
                 enabled=False,
                 tooltip=UPDATE_TOOLIP,
             )
         )
-        widget_adder.widget_adder(
+        witem_adder.witem_adder(
             "remove_btn",
             main_widgets.Button(
                 text="Remove",
-                to_connect=self.remove_step,
-                enabled=True,
+                to_connect=self.profile_editor.remove_step_signal.emit,
+                enabled=False,
                 tooltip=REMOVE_TOOLIP,
             )
         )
         return self.btn_layout
-
-    @QtCore.pyqtSlot()
-    def add_step(self):
-        """Add step"""
-        print("add step !")
-
-    @QtCore.pyqtSlot()
-    def update_step(self):
-        """Applies values from sliders to current step"""
-        print("Update step settings")
-
-    @QtCore.pyqtSlot()
-    def remove_step(self):
-        """Removes current step"""
-        self.profile_editor.remove_step_signal.emit()
 
 
 class TempDutySliders(main_widgets.VBox):
@@ -395,12 +511,12 @@ class TempDutySliders(main_widgets.VBox):
         """Returns values from both sliders (temp. and duty)"""
         duty = self.duty_slider.value()
         temp = self.temp_slider.value()
-        return duty, temp
+        return temp, duty
 
     @QtCore.pyqtSlot(int, int)
-    def set_values(self, duty, temp):
-        self.duty_slider.setValue(duty)
+    def set_values(self, temp, duty):
         self.temp_slider.setValue(temp)
+        self.duty_slider.setValue(duty)
 
     @QtCore.pyqtSlot(int)
     def duty_slider_changed(self, value):
@@ -433,8 +549,8 @@ class ProfileCtrl(main_widgets.VBox):
 
     def _ctrl_btns_layout(self):
         hbox = main_widgets.HBox()
-        widget_adder = WidgetAdder(self, hbox)
-        widget_adder.widget_adder(
+        witem_adder = WidgetAdder(self, hbox).witem_adder
+        witem_adder(
             "save_btn",
             main_widgets.Button(
                 text="Save",
@@ -443,7 +559,7 @@ class ProfileCtrl(main_widgets.VBox):
                 tooltip="Save current settings to a profile."
             )
         )
-        widget_adder.widget_adder(
+        witem_adder(
             "reset_btn",
             main_widgets.Button(
                 text="Reset",
@@ -454,7 +570,7 @@ class ProfileCtrl(main_widgets.VBox):
                 tooltip="Reset settings and reload currently selected profile."
             )
         )
-        widget_adder.widget_adder(
+        witem_adder(
             "delete_btn",
             main_widgets.Button(
                 text="Delete",
