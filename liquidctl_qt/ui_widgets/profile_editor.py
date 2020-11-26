@@ -275,7 +275,6 @@ class StepsViewer(QtWidgets.QTableView):
         return temp, duty, df_new
 
     def update_sliders(self):
-        # fixme: idk if word "fetching" is used properly
         """
         Updates sliders by getting data from the DataFrame object
         """
