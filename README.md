@@ -17,8 +17,8 @@
 			- [x] Dialog
 			* [ ] Widget
 				- [x] ProfileModeChooser - choose profile and mode (static/profile)
-				- [ ] Steps viewer (QTableView) - view steps ordered by temp.
-				- [ ] Step editor - add/edit/delete a step in steps viewer
+				- [x] Steps viewer (QTableView) - view steps ordered by temp.
+				- [x] Step editor - add/edit/delete a step in steps viewer
 				- [ ] Profile controls - save/delete or reset settings (reset settings to current profile)
 	- [ ] Led widget
 
