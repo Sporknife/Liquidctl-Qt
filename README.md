@@ -8,6 +8,7 @@
 * [ ] Backend
 	- [x] Simple liquidctl api for the application
 	- [ ] Legacy devices
+	- [ ] Utils (making it save & load profiles properly)
 
 * [ ] Complete widgets
 	- [x] Main window
