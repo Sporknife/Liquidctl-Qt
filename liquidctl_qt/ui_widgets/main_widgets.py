@@ -152,7 +152,7 @@ class HardwareWidget(QtWidgets.QFrame):
         self.setLineWidth(1)
 
         class Top(HBox):  # pylint: disable=used-before-assignment
-            def __init__(self, hw_name, settings_btn_to_cnct):
+            def __init__(self, hw_name: str, settings_btn_to_cnct):
                 super().__init__(self)
                 self._layout(hw_name, settings_btn_to_cnct)
 
