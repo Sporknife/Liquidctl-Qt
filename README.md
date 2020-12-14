@@ -33,3 +33,9 @@
 * Python packages
 	- [PyQt5](https://pypi.org/project/PyQt5/)
 	- [notify-send](https://pypi.org/project/notify-send/)
+
+## App usage
+### Profile naming rules
+- Allowed characters: all letters and numbers + -, _
+- Max name length: 20 characters
+- Min name langth: 1 character
