@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets
+from PySide6 import QtWidgets, QtCore
 from ui_widgets import main_widgets
 import string
 
@@ -99,3 +99,88 @@ class ProfileNameDialog(main_widgets.Dialog):
     @property
     def name(self):
         return self._text_input.text()
+
+class ProfileControls(main_widgets.HBox):
+    def __init__(self, profile_handler):
+        super().__init__()
+        self.profile_handler = profile_handler
+        self._layout()
+
+    def _layout(self):
+        self.addSpacerItem(
+            main_widgets.Spacer(
+                h_pol=QtWidgets.QSizePolicy.Expanding,
+                width=40,
+            )
+        )
+        self._btns()
+
+    def _btns(self):
+        self.addWidget(
+            main_widgets.Button(
+                "Reload Graph",
+                self.profile_handler.reload_graph_signal.emit,
+                enabled=False,
+                tooltip="Recreates the graph from current settings"
+            )
+        )
+        self.addWidget(
+            main_widgets.Button(
+                "Apply settings",
+                self.profile_handler.apply_settings_signal.emit,
+                enabled=True,
+                tooltip="Applies current settings"
+            )
+        )
+
+
+class GraphFrame(QtWidgets.QFrame):
+    def __init__(self, profile_handler):
+        super().__init__()
+        self.profile_handler = profile_handler
+        self._style()
+
+    def _style(self):
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding
+        )
+        self.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.setLineWidth(1)
+
+
+class MsgDialog(main_widgets.Dialog):
+    def __init__(self, parent, DIALOG_MSG):
+        super().__init__("Message", parent)
+        self.DIALOG_MSG = DIALOG_MSG  # pylint: disable=invalid-name
+        self.setLayout(self._layout())
+        self.adjust_size()
+
+    def _layout(self):
+        vbox = main_widgets.VBox()
+        vbox.addWidget(
+            main_widgets.Label(
+            self.DIALOG_MSG,
+            alignment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom
+        ))
+        vbox.addItem(self._btn_layout())
+        return vbox
+
+    def _btn_layout(self):
+        hbox = main_widgets.HBox()
+        hbox.addSpacerItem(
+            main_widgets.Spacer(
+                height=0,
+                width=20,
+                v_pol=QtWidgets.QSizePolicy.Ignored,
+                h_pol=QtWidgets.QSizePolicy.Expanding
+            )
+        )
+        hbox.addWidget(
+            main_widgets.Button(
+                text="OK",
+                to_connect=self.close
+            )
+        )
+        return hbox

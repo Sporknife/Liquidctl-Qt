@@ -11,10 +11,6 @@ class Stack(QtWidgets.QFrame):
         self._init()
 
     def _init(self):
-        self.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding,
-            QtWidgets.QSizePolicy.Expanding
-        )
         self._style()
         self.setLayout(self._layout())
         self.info.main_handler.device_changed_signal.connect(
@@ -22,6 +18,10 @@ class Stack(QtWidgets.QFrame):
         )
 
     def _style(self):
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding
+        )
         self.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.setLineWidth(1)

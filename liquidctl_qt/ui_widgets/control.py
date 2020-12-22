@@ -28,17 +28,17 @@ class FanWidget(main_widgets.HardwareWidget):
 
 
 class ProfileEditorDialog(QtWidgets.QDialog):
-    def __init__(self, name: str, curr_dev_info: dict):
+    def __init__(self, name: str, curr_dev_dict: dict):
         super().__init__()
         self.setModal(True)
         self.setWindowTitle(name)
-        self.setLayout(self._layout(name, curr_dev_info))
+        self.setLayout(self._layout(name, curr_dev_dict))
         self._connect()
 
-    def _layout(self, name, curr_dev_info):
+    def _layout(self, name, curr_dev_dict):
         layout = QtWidgets.QVBoxLayout()
         self._profile_editor = profile_editor.ProfileEditor(
-            self, name, curr_dev_info)
+            self, name, curr_dev_dict)
         layout.addWidget(self._profile_editor)
         return layout
 

@@ -117,11 +117,18 @@ class DutyProfiles:
 
     def set_duty(self, device_obj, hw_name, static_duty=None, profile_df=None):
         hw_name = hw_name.replace(" ", "").lower()
-        if static_duty is not None:
+        if static_duty != None:
             device_obj.set_fixed_speed(hw_name, static_duty)
 
-        if profile_df:
-            pass
+        elif profile_df is not None:
+            liquidctl_format = self.to_liqidctl_profile(profile_df)
+            device_obj.set_speed_profile(hw_name, liquidctl_format)
+
+    def to_liqidctl_profile(self, profile_df):
+        liquidctl_format = ""
+        for tempduty in profile_df.to_csv(index=False, header=False).split():
+            liquidctl_format += tempduty.replace(",", " ")+ " "
+        return liquidctl_format
 
 
 class LedProfiles:

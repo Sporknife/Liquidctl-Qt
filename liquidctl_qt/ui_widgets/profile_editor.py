@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import utils
 import exceptions
+from liquidctl.error import NotSupportedByDevice
 
 
 class Signals:
@@ -58,20 +59,41 @@ class ProfileEditor(QtWidgets.QWidget):
         self.device_dict = device_dict
         self.profile_handler = ProfileHandler(self)
 
-    def _layout(self):
+    def _left(self):
         vbox = main_widgets.VBox()
-        widget_adder = utils.WidgetAdder(self, vbox)
-        widget_adder.item_adder(
+        witem_adder = utils.WidgetAdder(self, vbox)
+        witem_adder.item_adder(
             "profile_mode_chooser", ProfileModeChooser(self.profile_handler)
         )
-        widget_adder.widget_adder("steps_editor", StepsViewEditor(self))
-        widget_adder.item_adder(
+        witem_adder.widget_adder("steps_editor", StepsViewEditor(self))
+        witem_adder.item_adder(
             "step_control", StepControl(self.profile_handler))
-        widget_adder.item_adder(
+        witem_adder.item_adder(
             "control_sliders", ControlSliders(self.profile_handler))
-        widget_adder.item_adder(
+        witem_adder.item_adder(
             "profile_control", ProfileCtrl(self.profile_handler))
         return vbox
+
+    def _right(self):
+        vbox = main_widgets.VBox()
+        witem_adder = utils.WidgetAdder(self, vbox)
+        witem_adder.widget_adder(
+            "graph_frame",
+            profile_widgets.GraphFrame(self.profile_handler)
+        )
+        witem_adder.item_adder(
+            "controls",
+            profile_widgets.ProfileControls(self.profile_handler)
+        )
+        return vbox
+
+    def _layout(self):
+        hbox = main_widgets.HBox()
+        hbox.addItem(self._left())
+        hbox.addItem(self._right())
+
+        return hbox
+
 
     def _load_first_profile(self):
         profile_name = self.profile_mode_chooser.curr_profile_name
@@ -94,6 +116,9 @@ class ProfileHandler(QtCore.QObject):
     mode_changed_signal = QtCore.Signal(bool)  # when static mode is changed
     delete_profile_signal = QtCore.Signal()  # remove current profile
     save_profile_signal = QtCore.Signal()
+    # apply settings, reload the graph
+    reload_graph_signal = QtCore.Signal()
+    apply_settings_signal = QtCore.Signal()
 
     def __init__(self, profile_editor):
         super().__init__()
@@ -105,6 +130,8 @@ class ProfileHandler(QtCore.QObject):
     def _connect_signals(self):
         self.save_profile_signal.connect(self.save_profile)
         self.delete_profile_signal.connect(self.delete_profile)
+        self.apply_settings_signal.connect(self.apply_settings)
+        self.reload_graph_signal.connect(self.reload_graph)
 
     @QtCore.Slot()
     def save_profile(self):
@@ -183,6 +210,35 @@ class ProfileHandler(QtCore.QObject):
                 "data_frame": str_df,
             }
 
+    @QtCore.Slot()
+    def apply_settings(self):
+        device_obj = self.profile_editor.device_dict.get("device_obj")
+        hw_name = self.profile_editor.objectName()
+
+        if self.profile_editor.profile_mode_chooser.current_mode:
+            _, duty = self.profile_editor.control_sliders.get_values()
+            self.profiles.duty_profiles.set_duty(
+                device_obj,
+                hw_name,
+                static_duty=duty
+            )
+        else:
+            try:
+                self.profiles.duty_profiles.set_duty(
+                    device_obj,
+                    hw_name,
+                    profile_df=self.profile_editor.steps_editor.model().df
+                )
+            except NotSupportedByDevice:
+                profile_widgets.MsgDialog(
+                    parent=self.profile_editor.main_dialog,
+                    DIALOG_MSG="Your device does not support profiles."
+                ).exec_()
+
+    QtCore.Slot()
+    def reload_graph(self):
+        pass
+
     def decision_dialog(self, DIALOG_MSG):  # pylint: disable=invalid-name
         # self.profile_editor.hide_dialog_signal.emit()
         output = main_widgets.DecisionDialog(
@@ -206,15 +262,15 @@ class ProfileModeChooser(main_widgets.HBox):
         self.profile_handler.load_profile_signal.connect(self.set_settings)
 
     def _layout(self) -> main_widgets.HBox:
-        widget_adder = utils.WidgetAdder(self, self)
-        widget_adder.widget_adder("profile_chooser", widget=self._left())
+        witem_adder = utils.WidgetAdder(self, self)
+        witem_adder.widget_adder("profile_chooser", widget=self._left())
         self.addSpacerItem(
             main_widgets.Spacer(
                 h_pol=QtWidgets.QSizePolicy.Fixed,
                 width=5,
             )
         )
-        widget_adder.widget_adder("mode_chooser", widget=self._right())
+        witem_adder.widget_adder("mode_chooser", widget=self._right())
 
     def _left(self):
         """ComboBox for profile selection"""
