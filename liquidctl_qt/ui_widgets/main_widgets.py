@@ -1,12 +1,11 @@
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 
 
 class Button(QtWidgets.QPushButton):
-    __slots__ = ("enabled_style",)
+    # __slots__ = ("enabled_style",)  # fixme: __slots__ cause a crash
 
     def __init__(
         self,
-        name: str = "",
         text: str = "",
         to_connect=None,
         color=(),  # when button enabled
@@ -17,24 +16,22 @@ class Button(QtWidgets.QPushButton):
         enabled=True,
         tooltip="",
     ):
-        super().__init__()
+        super().__init__(text=text)
         self.enabled_style = []
-        if name:
-            self.setObjectName(name)
-        self.setText(text)
+
         if to_connect:
             self.clicked.connect(to_connect)
+
         if color:  # sets color for text and buttons border
             self.enabled_style.append(f"color: rgb{color};")
         if disabled_color:  # when button is disabled it uses this color
             self.setStyleSheet(
-                "QPushButton:disabled {color: rgb"
-                + str(disabled_color) + "}\n")
+                "QPushButton:disabled {color: rgb" + str(disabled_color) + "}\n"
+            )
         if font_size:
             self.enabled_style.append(f"font-size: {font_size}px;")
         self.setSizePolicy(h_pol, v_pol)
-        if not enabled:
-            self.setEnabled(enabled)
+        self.setEnabled(enabled)
         if tooltip:
             self.setToolTip(tooltip)
         if any((color, font_size)):
@@ -53,7 +50,6 @@ class Button(QtWidgets.QPushButton):
 class CheckBox(QtWidgets.QCheckBox):
     def __init__(
         self,
-        name: str = "",
         text: str = "",
         checked: bool = True,
         h_pol=QtWidgets.QSizePolicy.Preferred,
@@ -61,9 +57,6 @@ class CheckBox(QtWidgets.QCheckBox):
         to_connect=None,
     ):  # pylint: disable=dangerous-default-value
         super().__init__()
-
-        if name:
-            self.setObjectName(name)
         self.setText(text)
         if to_connect:
             self.stateChanged.connect(to_connect)
@@ -74,61 +67,70 @@ class CheckBox(QtWidgets.QCheckBox):
 class ComboBox(QtWidgets.QComboBox):
     def __init__(
         self,
-        name: str = "",
         items: list = [],
         h_pol=QtWidgets.QSizePolicy.Preferred,
         v_pol=QtWidgets.QSizePolicy.Preferred,
         to_connect=None,
     ):  # pylint: disable=dangerous-default-value
         super().__init__()
-        if name:
-            self.setObjectName(name)
+
         if items:
             self.addItems(items)
         self.setSizePolicy(h_pol, v_pol)
         if to_connect:
-            self.currentIndexChanged.connect(to_connect)
+            self.activated.connect(to_connect)
 
 
-class DecisionDialog(QtWidgets.QDialog):
+class Dialog(QtWidgets.QDialog):
+    def __init__(self, title="", parent=None):
+        super().__init__(parent=parent)
+        if title:
+            self.setWindowTitle(title)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
+        self.setWindowFlags(
+            self.windowFlags()
+            & ~QtCore.Qt.WindowCloseButtonHint
+            & ~QtCore.Qt.WindowContextHelpButtonHint
+        )
+
+    def adjust_size(self):
+        """
+        This exists for sole reason of resizing the dialog to a fixed size
+        (to disable minimize/maximize buttons)
+        """
+        self.show()
+        self.setFixedSize(self.size())
+        self.setMinimumSize(self.size())
+        self.setMaximumSize(self.size())
+
+
+class DecisionDialog(Dialog):
     """Dialog for user action, Message + Y/N"""
 
     # pylint: disable=invalid-name
-    def __init__(self, MSG_TEXT, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setWindowTitle("Decisions...")
-        self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
-        self.setWindowFlags(
-            self.windowFlags() &
-            ~QtCore.Qt.WindowCloseButtonHint &
-            ~QtCore.Qt.WindowContextHelpButtonHint
-        )
+    def __init__(self, parent, MSG_TEXT):
+        super().__init__("Decisions...", parent)
         self.setLayout(self._layout(MSG_TEXT))
-        width, height = int(self.width()), int(self.height())
-
-        self.setMaximumSize(width, height)
+        self.adjust_size()
 
     def _layout(self, MSG_TEXT):  # pylint: disable=invalid-name
         vbox = VBox()
         # pylint: disable=invalid-name
         msg_label = Label(
             text=MSG_TEXT,
-            aligment=QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter,
+            alignment=QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter,
         )
-        vbox.addWidget(msg_label)
-        vbox.addWidget(self._buttons_box())
+        vbox.addWidgets((msg_label, self._buttons_box()))
         return vbox
 
     def _buttons_box(self):
-        buttons = (
-            QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes
-        )
+        buttons = QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes
         buttons_box = QtWidgets.QDialogButtonBox(buttons)
         buttons_box.accepted.connect(self.accept)
         buttons_box.rejected.connect(self.reject)
         return buttons_box
 
-    @QtCore.pyqtSlot(QtGui.QCloseEvent)
+    @QtCore.Slot(QtGui.QCloseEvent)
     def closeEvent(self, close_event):  # pylint: disable=invalid-name
         close_event.reject()
 
@@ -138,7 +140,8 @@ class HardwareWidget(QtWidgets.QFrame):
     Hardware widget that shows basic info about specific hardware
     and allows to change some settings
     """
-    __slots__ = ("hw_info_obj",)
+
+    # __slots__ = ("hw_info_obj",)  # fixme: __slots__ cause a crash
 
     def __init__(
         self,
@@ -153,22 +156,20 @@ class HardwareWidget(QtWidgets.QFrame):
 
         class Top(HBox):  # pylint: disable=used-before-assignment
             def __init__(self, hw_name: str, settings_btn_to_cnct):
-                super().__init__(self)
+                super().__init__()
                 self._layout(hw_name, settings_btn_to_cnct)
 
             def _layout(self, hw_name: str, settings_btn_to_cnct):
                 label = Label(text=hw_name, font_size=22, font_weight=600)
                 self.addWidget(label)
-                self.addItem(
+                self.addSpacerItem(
                     Spacer(
                         h_pol=QtWidgets.QSizePolicy.Expanding,
                     )
                 )
                 if settings_btn_to_cnct:
                     prof_settings = Button("Profile Settings")
-                    prof_settings.clicked.connect(
-                        lambda: settings_btn_to_cnct(hw_name)
-                    )
+                    prof_settings.clicked.connect(settings_btn_to_cnct)
                     self.addWidget(prof_settings)
 
         class HwInfo(QtWidgets.QGridLayout):
@@ -206,8 +207,10 @@ class HardwareWidget(QtWidgets.QFrame):
                     self.addWidget(
                         Label(
                             text=str(hw_info.get(info).get("value")),
-                            aligment=QtCore.Qt.AlignRight
-                            | QtCore.Qt.AlignVCenter,
+                            alignment=(
+                                QtCore.Qt.AlignRight |
+                                QtCore.Qt.AlignVCenter
+                            )
                         ),
                         i,
                         2,
@@ -215,8 +218,10 @@ class HardwareWidget(QtWidgets.QFrame):
                     self.addWidget(
                         Label(
                             text=hw_info.get(info).get(("measurement")),
-                            aligment=QtCore.Qt.AlignRight
-                            | QtCore.Qt.AlignVCenter,
+                            alignment=(
+                                QtCore.Qt.AlignRight |
+                                QtCore.Qt.AlignVCenter
+                            )
                         ),
                         i,
                         4,
@@ -225,8 +230,7 @@ class HardwareWidget(QtWidgets.QFrame):
             def update_info(self, hw_info):
                 for i, info in enumerate(hw_info.keys()):
                     self.itemAtPosition(i, 2).widget().setText(
-                        str(hw_info.get(info).get("value")
-                            )
+                        str(hw_info.get(info).get("value"))
                     )
                     pass
 
@@ -241,11 +245,13 @@ class HardwareWidget(QtWidgets.QFrame):
 
 
 class HBox(QtWidgets.QHBoxLayout):
-    def __init__(self, widget=None):
+    def __init__(self, widget=None, item=None):
         super().__init__()
         self.setSpacing(6)
         if widget:
             self.addWidget(widget)
+        if item:
+            self.addItem(item)
 
     def addWidgets(self, widgets):  # pylint: disable=invalid-name
         for widget in widgets:
@@ -273,31 +279,23 @@ class HBox(QtWidgets.QHBoxLayout):
 
 
 class Label(QtWidgets.QLabel):
-    __slots__ = ("text",)
-
     def __init__(
         self,
-        name: str = "",
         text: str = "",
-        aligment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter,
-        font_size: int = 0,
-        font_weight: int = 0,
+        alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignBottom,
+        font_size: int = None,
+        font_weight: int = None,
         enabled=True,
     ):
         super().__init__()
-        if name:
-            self.setObjectName(name)
-        self.text = str(text)
-        self.setText(self.text)
-        if aligment:
-            self.setAlignment(aligment)
-        if font_size:
+        self.setText(text)
+        self.setAlignment(alignment)
+        if font_size is not None:
             style = str(f"font-size: {font_size}px;\n")
             self.setStyleSheet(style)
-        if font_weight:
+        if font_weight is not None:
             self.setStyleSheet(
-                self.styleSheet() + f"font-weight: {font_weight};"
-            )
+                self.styleSheet() + f"font-weight: {font_weight};")
         if not enabled:
             self.setEnabled(enabled)
 
@@ -305,18 +303,15 @@ class Label(QtWidgets.QLabel):
 class Slider(QtWidgets.QSlider):
     def __init__(
         self,
-        name="",
         min_value=0,
         max_value=100,
         h_pol=QtWidgets.QSizePolicy.Preferred,
         v_pol=QtWidgets.QSizePolicy.Preferred,
         to_connect=None,
         enabled=True,
-        orientation=QtCore.Qt.Horizontal
+        orientation=QtCore.Qt.Horizontal,
     ):
         super().__init__()
-        if name:
-            self.setObjectName(name)
         self.setValue(min_value)
         self.setMinimum(min_value)
         self.setMaximum(max_value)
@@ -336,17 +331,6 @@ class Spacer(QtWidgets.QSpacerItem):
         height=20,
     ):
         super().__init__(width, height, h_pol, v_pol)
-
-
-class StackedWidget(QtWidgets.QStackedWidget):
-    def __init__(
-        self,
-    ):
-        super().__init__()
-        print("main_widgets.Stack, add animations")
-
-    def set_page(self, index: int):
-        self.setCurrentIndex(index)
 
 
 class VBox(QtWidgets.QVBoxLayout):

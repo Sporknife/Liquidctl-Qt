@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 from ui_widgets import main_widgets, profile_editor
 
 
@@ -10,7 +10,7 @@ class FanWidget(main_widgets.HardwareWidget):
         fan_name: str,
         fan_info: list,
         to_connect,
-        update_signal: QtCore.pyqtSignal,
+        update_signal,
     ):
         super().__init__(
             hw_name=fan_name,
@@ -20,7 +20,7 @@ class FanWidget(main_widgets.HardwareWidget):
         self.name = fan_name
         update_signal.connect(self.on_update)
 
-    @QtCore.pyqtSlot(dict)
+    @QtCore.Slot(dict)
     def on_update(self, dev_hw_info):
         hw_info = dev_hw_info.get(self.name)
         if hw_info:
@@ -28,17 +28,20 @@ class FanWidget(main_widgets.HardwareWidget):
 
 
 class ProfileEditorDialog(QtWidgets.QDialog):
-    def __init__(self, name: str):
+    def __init__(self, name: str, curr_dev_info: dict):
         super().__init__()
         self.setModal(True)
         self.setWindowTitle(name)
-        layout = main_widgets.HBox()
-        layout.addWidget(profile_editor.ProfileEditor(name))
-        self.setLayout(layout)
+        self.setLayout(self._layout(name, curr_dev_info))
+        self._connect()
 
+    def _layout(self, name, curr_dev_info):
+        layout = QtWidgets.QVBoxLayout()
+        self._profile_editor = profile_editor.ProfileEditor(
+            self, name, curr_dev_info)
+        layout.addWidget(self._profile_editor)
+        return layout
 
-class LiquidWidget(QtWidgets.QWidget):
-    def __init__(self, name: str, signals_obj):
-        super().__init__()
-        self.signals = signals_obj
-        self.setObjectName(name)
+    def _connect(self):
+        self._profile_editor.hide_dialog_signal.connect(self.hide)
+        self._profile_editor.show_dialog_signal.connect(self.show)

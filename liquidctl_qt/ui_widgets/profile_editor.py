@@ -1,191 +1,293 @@
-from PyQt5 import QtWidgets, QtCore
-from ui_widgets import main_widgets
+from PySide6 import QtWidgets, QtCore
+from ui_widgets import main_widgets, profile_widgets
 import pandas as pd
 import numpy as np
+import utils
+import exceptions
 
 
 class Signals:
     """Connect signals to slots, add widgets to layout"""
-    __slots__ = ("mode_signal", "reset_signal")
 
-    def __init__(self, mode_signal, reset_signal):
+    # __slots__ = ("mode_signal", "reset_signal")
+
+    def __init__(self, mode_signal):
         self.mode_signal = mode_signal
-        self.reset_signal = reset_signal
 
-    def mode_connect(self, witems, layout=False):
+    def mode_connect(self, witems=None, layout=None):
         """Connects widgets or widgets in a layout to mode changed signal"""
-        if not layout:
-            for widget in witems:
+        if witems:
+            if isinstance(witems, tuple):
+                for widget in witems:
+                    widget.setEnabled(False)
+                    self.mode_signal.connect(widget.setEnabled)
+            else:  # if only one widget is passed as witems
+                witems.setEnabled(False)
+                self.mode_signal.connect(witems.setEnabled)
+
+        elif layout:
+            for i in range(layout.count()):
+                widget = layout.itemAt(i).widget()
                 widget.setEnabled(False)
                 self.mode_signal.connect(widget.setEnabled)
-        else:  # if witems is layout
-            for i in range(witems.count()):
-                widget = witems.itemAt(i).widget()
-                widget.setEnabled(False)
-                self.mode_signal.connect(widget.setEnabled)
-        return witems
 
-    def reset_connect(self, witems, layout=False):
-        """Connects widgets or widgets in a layout to reset signal"""
-        if not layout:
-            for widget in witems:
-                self.reset_signal.connect(widget.reset)
-        else:  # if witems is layout
-            for i in range(witems.count()):
-                widget = witems.itemAt(i).widget()
-                self.reset_signal.connect(widget.reset)
-        return witems
-
-
-class WidgetAdder:
-    """
-    Add widget to layout and returns widget object
-    to be saved in a variable
-    """
-    __slots__ = ("class_obj", "layout")
-
-    def __init__(self, class_obj, layout_obj):
-        self.class_obj = class_obj  # just pass "self"
-        self.layout = layout_obj  # layout to which widgets should be added
-
-    def witem_adder(self, name="", widget=None, item=None):
-        # name = name for __settattr__
-        # widget = widget object
-        if widget:
-            if name:
-                self.class_obj.__setattr__(name, widget)
-            self.layout.addWidget(widget)
-            return widget
-        elif item:
-            if name:
-                self.class_obj.__setattr__(name, item)
-            self.layout.addItem(item)
+        else:
+            raise exceptions.UnexpectedBehaviour(
+                "none of the variables have a valid value")
 
 
 class ProfileEditor(QtWidgets.QWidget):
-    """Main widget"""
-    __slots__ = ("signals",)
+    """Main widget for profile editor"""
+    hide_dialog_signal = QtCore.Signal()
+    show_dialog_signal = QtCore.Signal()
 
-    """Steps signals"""
-    add_step_signal = QtCore.pyqtSignal()  # add a step
-    update_step_signal = QtCore.pyqtSignal()  # update current step
-    remove_step_signal = QtCore.pyqtSignal()  # remove step
-    """Sliders signals"""
-    set_sliders_value_signal = QtCore.pyqtSignal(int, int)
-    """Profile signals"""
-    # contains data about newly selected profile (if static profile, etc.)
-    profile_changed_signal = QtCore.pyqtSignal(dict)  # when profile is changed
-    reset_profile_singal = QtCore.pyqtSignal(dict)  # reload profile settings
-    mode_change_signal = QtCore.pyqtSignal(bool)
-    delete_profile_signal = QtCore.pyqtSignal(dict)  # remove a profile
+    # __slots__ = ("device_dict", "profile_handler", "signals")
 
-    def __init__(self, name: str):
+    def __init__(self, main_dialog, name, device_dict: dict):
         super().__init__()
-        self.signals = Signals(
-            self.mode_change_signal, self.reset_profile_singal
-        )
         self.setObjectName(name)
+        self._init(main_dialog, device_dict)
+
+    def _init(self, main_dialog, device_dict):
+        self._variables(main_dialog, device_dict)
         self.setLayout(self._layout())
+        self._load_first_profile()
+
+    def _variables(self, main_dialog, device_dict):
+        self.main_dialog = main_dialog
+        self.device_dict = device_dict
+        self.profile_handler = ProfileHandler(self)
 
     def _layout(self):
-        hbox = main_widgets.HBox()
-        hbox.addItem(self._left())
-        return hbox
-
-    def _left(self):
         vbox = main_widgets.VBox()
-        witem_adder = WidgetAdder(self, vbox).witem_adder
-        witem_adder(item=ProfileModeChooser(self))
-        witem_adder("steps_viewer", widget=StepsViewer(self, model=None))
-        vbox.addItem(StepControl(self))
-        witem_adder("tempduty_sliders", item=TempDutySliders(self))
-        vbox.addItem(ProfileCtrl(self))
+        widget_adder = utils.WidgetAdder(self, vbox)
+        widget_adder.item_adder(
+            "profile_mode_chooser", ProfileModeChooser(self.profile_handler)
+        )
+        widget_adder.widget_adder("steps_editor", StepsViewEditor(self))
+        widget_adder.item_adder(
+            "step_control", StepControl(self.profile_handler))
+        widget_adder.item_adder(
+            "control_sliders", ControlSliders(self.profile_handler))
+        widget_adder.item_adder(
+            "profile_control", ProfileCtrl(self.profile_handler))
         return vbox
 
-    def _right(self):
-        pass
+    def _load_first_profile(self):
+        profile_name = self.profile_mode_chooser.curr_profile_name
+        if profile_name:
+            self.profile_handler.load_profile(profile_name)
+
+
+class ProfileHandler(QtCore.QObject):
+    """Used for main events like when a profile is saved, deleted, reloaded"""
+
+    """Steps signals"""
+    add_step_signal = QtCore.Signal()  # add a step
+    update_step_signal = QtCore.Signal()  # update current step
+    remove_step_signal = QtCore.Signal()  # remove step
+    """Sliders signals"""
+    set_sliders_value_signal = QtCore.Signal(int, int)
+    """Profile signals"""
+    # contains data about newly selected profile (if its static profile, etc.)
+    load_profile_signal = QtCore.Signal(dict)  # when profile is switched
+    mode_changed_signal = QtCore.Signal(bool)  # when static mode is changed
+    delete_profile_signal = QtCore.Signal()  # remove current profile
+    save_profile_signal = QtCore.Signal()
+
+    def __init__(self, profile_editor):
+        super().__init__()
+        self.profile_editor = profile_editor
+        self.profiles = utils.Profiles()
+        self.signals = Signals(self.mode_changed_signal)
+        self._connect_signals()
+
+    def _connect_signals(self):
+        self.save_profile_signal.connect(self.save_profile)
+        self.delete_profile_signal.connect(self.delete_profile)
+
+    @QtCore.Slot()
+    def save_profile(self):
+        """
+        Saves profile settings
+        profile = {
+            "name": str,
+            "device_info": {
+                "name": str,  # device name
+                "vendor_id": str,  # device vendor id
+                "product_id": str,  # device product id
+            },
+            "static_duty": int,  # int from 0 to 100 ELSE None
+            "data_frame": pd.DataFrame, # DataFrame object ELSE None
+        }
+        """
+        name_dialog = profile_widgets.ProfileNameDialog(
+            main_dialog=self.profile_editor.main_dialog)
+        self.profile_editor.hide_dialog_signal.emit()
+        if name_dialog.exec_():
+            profile_name = name_dialog.name
+            profile_name_exists = bool(
+                profile_name in self.profiles.duty_profiles.get_profiles()
+            )
+            DIALOG_MSG = "Override profile ?"  # pylint: disable=invalid-name
+            # if a profile with the same name exists ask to override
+
+            if profile_name_exists and not (
+                main_widgets.DecisionDialog(
+                    self.profile_editor.main_dialog, DIALOG_MSG).exec_()
+            ):
+                # if user selects to not override, it doesn't continue
+                return
+            self.profiles.duty_profiles.save_profile(
+                self.profile_settings(profile_name)
+            )
+        self.profile_editor.show_dialog_signal.emit()
+
+    @QtCore.Slot()
+    def reload_profile(self):  # fixme: test me
+        profile_name = (
+            self.profile_editor.profile_mode_chooser.curr_profile_name
+        )
+        self.load_profile(profile_name)
+
+    @QtCore.Slot()
+    def delete_profile(self):  # fixme: test me
+        self.profile_editor.profile_mode_chooser.remove_curr_profile()
+
+    @QtCore.Slot()
+    def load_profile(self, profile_name):
+        static_mode = False
+        profile_settings = self.profiles.duty_profiles.load_profile(
+            profile_name
+        )
+        if profile_settings.get("static_duty") is not None:
+            static_mode = True
+        self.mode_changed_signal.emit(not static_mode)
+        self.load_profile_signal.emit(profile_settings)
+
+    def profile_settings(self, name) -> dict:
+        if self.profile_editor.profile_mode_chooser.current_mode:
+            _, duty = self.profile_editor.control_sliders.get_values()
+            return {
+                "name": name,
+                "device_info": self.profile_editor.device_info,
+                "static_duty": duty,
+                "data_frame": None,
+            }
+        else:
+            str_df = self.profile_editor.steps_editor.model_to_str()
+            return {
+                "name": name,
+                "device_info": self.profile_editor.device_info,
+                "static_duty": None,
+                "data_frame": str_df,
+            }
+
+    def decision_dialog(self, DIALOG_MSG):  # pylint: disable=invalid-name
+        # self.profile_editor.hide_dialog_signal.emit()
+        output = main_widgets.DecisionDialog(
+            self.profile_editor.main_dialog,
+            DIALOG_MSG,
+            fixed_size=True
+        ).exec_()
+        # self.profile_editor.show_dialog_signal.emit()
+        return output
 
 
 class ProfileModeChooser(main_widgets.HBox):
-    """Select the profile and its mode"""
-    __slots__ = ("profile_editor", "combobox", "checkbox")
+    """Profile and its mode (static duty or not)"""
 
-    def __init__(self, prof_editor_obj: ProfileEditor,):
+    # __slots__ = ("profile_handler",)
+
+    def __init__(self, profile_handler):
         super().__init__()
-        self.profile_editor = prof_editor_obj
+        self.profile_handler = profile_handler
         self._layout()
+        self.profile_handler.load_profile_signal.connect(self.set_settings)
 
-    def _layout(self):
-        self.addWidget(self._left())
-        self.addItem(
+    def _layout(self) -> main_widgets.HBox:
+        widget_adder = utils.WidgetAdder(self, self)
+        widget_adder.widget_adder("profile_chooser", widget=self._left())
+        self.addSpacerItem(
             main_widgets.Spacer(
                 h_pol=QtWidgets.QSizePolicy.Fixed,
                 width=5,
             )
         )
-        self.addWidget(self._right())
+        widget_adder.widget_adder("mode_chooser", widget=self._right())
 
     def _left(self):
-        self.combobox = main_widgets.ComboBox(
-            name="profile-chooser",
-            items=[],
-            to_connect=self.on_profile_change,
+        """ComboBox for profile selection"""
+        return main_widgets.ComboBox(
+            items=self.profile_handler.profiles.duty_profiles.get_profiles(),
+            to_connect=self.change_profile,
         )
-        return self.combobox
 
     def _right(self):
-        self.checkbox = main_widgets.CheckBox(
+        """CheckBox for profile mode selection (static duty or not)"""
+        return main_widgets.CheckBox(
             text="Fixed mode ?",
             to_connect=self.change_mode,
         )
-        return self.checkbox
 
-    @QtCore.pyqtSlot(int)
-    def on_profile_change(self, index):
-        self.profile_editor.profile_changed_signal.emit(
-            {
-                "new_index": index,
-                "name": self.combobox.currentText()
-            }
-        )
+    @property
+    def curr_profile_name(self) -> str:
+        return self.profile_chooser.currentText()
 
-    @QtCore.pyqtSlot(int)
+    @property
+    def curr_index(self) -> int:
+        return self.profile_chooser.currentIndex()
+
+    @property
+    def current_mode(self) -> bool:
+        return self.mode_chooser.isChecked()
+
+    def remove_curr_profile(self):
+        self.removeItem(self.curr_index)
+
+    def add_profile(self, profile_name: str):
+        self.addItem(profile_name)
+        self.setActivated(-1)
+
+    @QtCore.Slot(int)
+    def change_profile(self, *args):  # pylint: disable=unused-argument
+        self.profile_handler.load_profile(self.curr_profile_name)
+
+    @QtCore.Slot(bool)
     def change_mode(self, mode):
-        self.profile_editor.mode_change_signal.emit(not mode)
+        self.profile_handler.mode_changed_signal.emit(not bool(mode))
+
+    @QtCore.Slot(dict)
+    def set_settings(self, profile_settings):
+        static_mode = False
+        if profile_settings.get("static_duty") is not None:
+            static_mode = True
+        self.mode_chooser.setChecked(static_mode)
 
 
-class StepsViewer(QtWidgets.QTableView):
-    """
-    Allows you to view steps and their values
-    """
-    __slots__ = ("profile_editor",)
+class StepsViewEditor(QtWidgets.QTableView):
+    """Allows you to view and add/update/remove steps"""
 
-    def __init__(self, prof_editor_obj: ProfileEditor,
-                 model: QtCore.QAbstractTableModel):
+    # __slots__ = ("profile_editor", "profile_handler")
+
+    def __init__(self, profile_editor):
         super().__init__()
-        self.setSizePolicy(
-            QtWidgets.QSizePolicy.Preferred,
-            QtWidgets.QSizePolicy.Expanding,
-        )
-        self.profile_editor = prof_editor_obj
-        self._set_model()
-
-        # if model:
-        # 	self.setModel(model)
-
-        self._setter()
+        self.profile_editor = profile_editor
+        self.profile_handler = profile_editor.profile_handler
         self._connect_signals()
+        self._set_properties()
+        self._set_init_model()
 
     def _connect_signals(self):
-        self.profile_editor.signals.mode_connect((self,))
-        self.profile_editor.remove_step_signal.connect(self.remove_step)
-        self.profile_editor.update_step_signal.connect(self.update_step)
-        self.profile_editor.add_step_signal.connect(self.add_step)
+        self.profile_handler.load_profile_signal.connect(self.set_settings)
+        """Connects signals to slots"""
+        self.profile_handler.signals.mode_connect(witems=self)
+        self.profile_handler.remove_step_signal.connect(self.remove_step)
+        self.profile_handler.update_step_signal.connect(self.update_step)
+        self.profile_handler.add_step_signal.connect(self.add_step)
 
-    def _save_models(self):  # fixme: impliment saving models in a dict
-        pass
-
-    def _setter(self):
+    def _set_properties(self):
+        """Sets widget properties"""
         self.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.setAlternatingRowColors(True)
         self.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -196,33 +298,47 @@ class StepsViewer(QtWidgets.QTableView):
         )
         self.verticalHeader().setVisible(False)
 
-    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def _set_init_model(self):
+        model = TempDutyModel(
+            pd.DataFrame(
+                [[-1, -1]],
+                columns=["Temperature", "Duty"],
+                dtype=np.int8
+            )
+        )
+        self.setModel(model)
+        self.model().removeRow(0)
+
+    @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
     # pylint: disable=invalid-name, unused-argument
-    def currentChanged(self, current, previous):
-        """when currently selected is changed by the program or user"""
+    def currentChanged(self, *args):
         self.update_sliders()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def add_step(self):
         """Inserts step accordingly to temperature"""
         temp, duty, df_new = self.get_info()
         iloc_with_temp = self.model().get_iloc(temp)
         DIALOG_MSG = (  # pylint: disable=invalid-name
-            "There is a step with the same temprature" +
-            "\nWould you like yo overwrite it?"
+            "There is a step with the same temprature"
+            + "\nWould you like yo overwrite it?"
         )
-        decision_dialog = main_widgets.DecisionDialog(DIALOG_MSG)
 
         # if a step with same temp. value exists and if so get user input
-        if iloc_with_temp is not None and decision_dialog.exec_():
+        if iloc_with_temp is not None:
+            self.profile_editor.hide_dialog_signal.emit()
+            if not self.profile_handler.decision_dialog(DIALOG_MSG):
+                return
+            self.profile_editor.show_dialog_signal.emit()
             self.model().updateRow(temp, duty, iloc_int=iloc_with_temp)
             self.selectRow(iloc_with_temp)  # sets active row
+
         else:
             iloc_for_row = self.model().get_iloc_for_row(temp)
             self.model().addRow(iloc_for_row, df_new)  # adds the new row
             self.selectRow(iloc_for_row)  # sets active row
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def update_step(self):
         """
         Updates currently selected step to values specified in sliders
@@ -232,45 +348,58 @@ class StepsViewer(QtWidgets.QTableView):
         if current_index.isValid():
             current_row_iloc = current_index.row()
             DIALOG_MSG = (  # pylint: disable=invalid-name
-                "There is a step with the same temprature" +
-                "\nWould you like yo overwrite it?"
+                "There is a step with the same temprature"
+                + "\nWould you like yo overwrite it?"
             )
-            decision_dialog = main_widgets.DecisionDialog(DIALOG_MSG)
             iloc_with_temp = self.model().get_iloc(temp)
-
-            # if a step with same temp. value exists and if so get user input
-            if iloc_with_temp is not None and decision_dialog.exec_():
-                # remove row with the same temp. value
-                self.model().removeRow(iloc_with_temp)
-                # update current row
+            if current_row_iloc == iloc_with_temp:
                 self.model().updateRow(temp, duty, iloc_int=current_row_iloc)
+
+                # fixme: don't use this bs
+                self.update_displayed_value(current_row_iloc)
                 self.selectRow(current_row_iloc)  # sets active row
 
-            # if a step with the same temp. values doesn't exist
-            else:
-                self.model().updateRow(temp, duty, iloc_int=current_row_iloc)
-                self.selectRow(self.model().get_iloc(temp))  # sets active row
+            elif (
+                iloc_with_temp is not None and
+                current_row_iloc != iloc_with_temp
+                and main_widgets.DecisionDialog(
+                    self.profile_editor.main_dialog,
+                    DIALOG_MSG
+                ).exec_()
+            ):
+                # remove row with the same temp. value
+                self.model().removeRow(current_row_iloc)
+                # update current row
+                self.model().updateRow(temp, duty, iloc_int=iloc_with_temp)
+                self.update_displayed_value(iloc_with_temp)
+                self.selectRow(iloc_with_temp)  # sets active row
 
-    @QtCore.pyqtSlot()
+            elif iloc_with_temp is None:
+                self.model().updateRow(temp, duty, iloc_int=current_row_iloc)
+                # wont try to get the iloc before the row even exists
+                # pylint: disable=invalid-name
+                _iloc_with_temp = self.model().get_iloc(temp)
+                self.update_displayed_value(_iloc_with_temp)
+                self.selectRow(_iloc_with_temp)  # sets active row
+
+            else:
+                raise Exception("Something is wrong !")
+
+    @QtCore.Slot()
     def remove_step(self):
         """Removes currently selected step"""
         if self.currentIndex().isValid():
-            self.model().removeRow(
-                self.currentIndex().row()
-            )
+            self.model().removeRow(self.currentIndex().row())
             self.update_sliders()
 
     def get_info(self):
         """
-        Returns temp, duty, and a new df for adding a new row in the original df
+        Returns temp, duty, and a new df for adding a new row
+        in the original df
         """
-        temp, duty = (
-            self.profile_editor.tempduty_sliders.get_values()
-        )
+        temp, duty = self.profile_editor.control_sliders.get_values()
         df_new = pd.DataFrame(
-            [[temp, duty]],
-            columns=["Temperature", "Duty"],
-            dtype=np.int8
+            [[temp, duty]], columns=["Temperature", "Duty"], dtype=np.int8
         )
         return temp, duty, df_new
 
@@ -281,27 +410,43 @@ class StepsViewer(QtWidgets.QTableView):
         index_model = self.currentIndex()
         if index_model.isValid():
             temp, duty = self.model().df.iloc[index_model.row()].to_list()
-            self.profile_editor.set_sliders_value_signal.emit(temp, duty)
+            self.profile_handler.set_sliders_value_signal.emit(temp, duty)
 
-    def index_at_pos(self, xpos, ypos):
-        point = QtCore.QPoint(xpos, ypos)
-        return self.indexAt(point)
+    def update_displayed_value(self, current_row_iloc):
+        """Stupid hack to instantly update the displayed value"""
+        self.selectRow(current_row_iloc + 1)
+        self.selectRow(current_row_iloc - 1)
 
-    def _set_model(self):  # fixme: delete this !
-        # this is for testing purposes only
-        df = pd.DataFrame(
-            [[i, i + 4] for i in range(0, 50)],
-            columns=["Temperature", "Duty"],
-            dtype=np.int8
+    def model_to_str(self):
+        return self.profile_handler.profiles.duty_profiles.frame_to_str(
+            self.model().df
         )
-        self.setModel(TempDutyModel(df))
+
+    @QtCore.Slot(dict)
+    def set_settings(self, profile_settings):
+        if profile_settings.get("static_duty") is not None:
+            model = TempDutyModel(
+                pd.DataFrame(
+                    [[-1, -1]],
+                    columns=["Temperature", "Duty"],
+                    dtype=np.int8
+                )
+            )
+            model.removeRow(0)
+        elif profile_settings.get("static_duty") is None:
+            df = self.profile_handler.profiles.duty_profiles.str_to_frame(
+                profile_settings.get("data_frame")
+            )
+            model = TempDutyModel(df)
+        self.setModel(model)
 
 
 class TempDutyModel(QtCore.QAbstractTableModel):
     """
     Model that is using pandas.DataFrame
     """
-    __slots__ = ("df",)
+
+    # __slots__ = ("df",)
 
     def __init__(self, df):
         super().__init__()
@@ -313,10 +458,10 @@ class TempDutyModel(QtCore.QAbstractTableModel):
             value = self.df.iloc[index.row(), index.column()]
             return str(int(value))  # i need to do this when updating a value
 
-    def rowCount(self, args):  # pylint: disable=invalid-name
+    def rowCount(self, *args):  # pylint: disable=invalid-name
         return self.df.shape[0]
 
-    def columnCount(self, args):  # pylint: disable=invalid-name
+    def columnCount(self, *args):  # pylint: disable=invalid-name
         return self.df.shape[1]
 
     # pylint: disable=invalid-name
@@ -334,14 +479,15 @@ class TempDutyModel(QtCore.QAbstractTableModel):
         self.dataChanged.emit(parent, parent)
         self.endRemoveRows()
 
-    # pylint: disable=invalid-name
-    def addRow(self, iloc, df_new):
+    def addRow(self, iloc, df_new):  # pylint: disable=invalid-name
         self.beginInsertRows(QtCore.QModelIndex(), iloc, iloc)
-        self.df = self.df.append(
-            df_new, ignore_index=True).sort_values(by="Temperature")
+        self.df = self.df.append(df_new, ignore_index=True).sort_values(
+            by="Temperature"
+        )
         self.endInsertRows()
 
-    def updateRow(self, temp, duty, loc_int=None, iloc_int=None):  # pylint: disable=invalid-name
+    # pylint: disable=invalid-name
+    def updateRow(self, temp, duty, loc_int=None, iloc_int=None):
         if loc_int is not None:
             self.df.loc[loc_int] = [temp, duty]
             self.df.sort_values(by="Temperature", inplace=True)
@@ -362,7 +508,7 @@ class TempDutyModel(QtCore.QAbstractTableModel):
         """
         Returns iloc (row number) with a specific temp. value
         """
-        iloc = (self.df["Temperature"] == temp)
+        iloc = self.df["Temperature"] == temp
         if iloc.any():
             return iloc.to_list().index(True)
         return None
@@ -383,213 +529,190 @@ class TempDutyModel(QtCore.QAbstractTableModel):
 
 
 class StepControl(main_widgets.VBox):
-    """Allows inserting, updating, removing steps"""
-    __slots__ = ("profile_editor", "header_label", "btn_layout")
+    """Allows adding, updating, removinf steps"""
 
-    def __init__(self, prof_editor_obj: ProfileEditor):
+    def __init__(self, profile_handler):
         super().__init__()
-        self.profile_editor = prof_editor_obj
+        self.profile_handler = profile_handler
         self._layout()
-        self.profile_editor.signals.mode_connect(
-            (self.header_label,)
-        )
 
     def _layout(self):
-        self.header_label = main_widgets.Label(
+        witem_adder = utils.WidgetAdder(self, self)
+        witem_adder.widget_adder("header_label", self._header_label())
+        self.addSpacerItem(
+            main_widgets.Spacer(v_pol=QtWidgets.QSizePolicy.Fixed, height=5)
+        )
+        witem_adder.item_adder("button_btns_layout", self._ctrl_btns_layout())
+
+    def _header_label(self):
+        label = main_widgets.Label(
             text="Step Control",
-            aligment=QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter,
-            font_size=17
+            alignment=QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter,
+            font_size=17,
         )
-        self.header_label.setEnabled(False)
-        self.addWidget(self.header_label)
-        self.addItem(
-            main_widgets.Spacer(
-                v_pol=QtWidgets.QSizePolicy.Fixed,
-                height=10
-            )
-        )
-        self.addItem(
-            self.profile_editor.signals.mode_connect(
-                self._ctrl_btns(),
-                layout=True
-            )
-        )
+        return label
 
-    def _ctrl_btns(self):
-        self.btn_layout = main_widgets.HBox()
-        witem_adder = WidgetAdder(self, self.btn_layout)
+    def _ctrl_btns_layout(self):
+        hbox = main_widgets.HBox()
+        widget_adder = utils.WidgetAdder(self, hbox).widget_adder
+        ADD_TOOLTIP = "Add step"  # pylint: disable=invalid-name
+        UPDATE_TOOLTIP = "Apply values to current step"  # pylint: disable=invalid-name
+        REMOVE_TOOLTIP = "Remove/Delete current step"  # pylint: disable=invalid-name
 
-        ADD_TOOLIP = "Add step"  # pylint: disable=invalid-name
-        UPDATE_TOOLIP = "Apply values to current step"  # pylint: disable=invalid-name
-        REMOVE_TOOLIP = "Remove/Delete current step"  # pylint: disable=invalid-name
-        witem_adder.witem_adder(
+        widget_adder(
             "add_btn",
             main_widgets.Button(
                 text="Add",
-                to_connect=self.profile_editor.add_step_signal.emit,
-                tooltip=ADD_TOOLIP,
-            )
+                to_connect=self.profile_handler.add_step_signal.emit,
+                tooltip=ADD_TOOLTIP,
+            ),
         )
-        witem_adder.witem_adder(
+        widget_adder(
             "update_btn",
             main_widgets.Button(
                 text="Update",
-                to_connect=self.profile_editor.update_step_signal.emit,
+                to_connect=self.profile_handler.update_step_signal.emit,
                 enabled=False,
-                tooltip=UPDATE_TOOLIP,
-            )
+                tooltip=UPDATE_TOOLTIP,
+            ),
         )
-        witem_adder.witem_adder(
+        widget_adder(
             "remove_btn",
             main_widgets.Button(
                 text="Remove",
-                to_connect=self.profile_editor.remove_step_signal.emit,
+                to_connect=self.profile_handler.remove_step_signal.emit,
                 enabled=False,
-                tooltip=REMOVE_TOOLIP,
-            )
+                tooltip=REMOVE_TOOLTIP,
+            ),
         )
-        return self.btn_layout
+        self.profile_handler.signals.mode_connect(layout=hbox)
+        return hbox
 
 
-class TempDutySliders(main_widgets.VBox):
-    """Sliders for defining temperature and duty"""
-    __slots__ = (
-        "profile_editor",
-        "sliders_changed",
-        "duty_value_label",
-        "duty_slider",
-        "temp_value_label",
-        "temp_slider")
+class ControlSliders(main_widgets.VBox):
+    """Sliders for temperature & duty control"""
 
-    def __init__(self, prof_editor_obj: ProfileEditor):
+    def __init__(self, profile_handler):
         super().__init__()
-        self.profile_editor = prof_editor_obj
-        # when slider is changed to enable step controls
-        self.sliders_changed = {
-            "duty": False,
-            "temperature": False
-        }
+        self.profile_handler = profile_handler
         self._layout()
-        self.profile_editor.set_sliders_value_signal.connect(self.set_values)
+        self.profile_handler.set_sliders_value_signal.connect(self.set_values)
+        self.profile_handler.load_profile_signal.connect(self.set_settings)
 
     def _layout(self):
-        self.addWitems(self._duty())
-        self.addWitems(self._temp())
+        self.addWitems(self._duty() + self._temp())
 
-    def _duty(self):
-        hbox = main_widgets.HBox()
-        header_label = main_widgets.Label(text="Duty", font_size=15)
-        self.duty_value_label = self._value_label("0 %",)
-        hbox.addWidgets((header_label, self.duty_value_label))
-        self.duty_slider = main_widgets.Slider(
-            to_connect=self.duty_slider_changed,
-            enabled=True
-        )
-        return (hbox, self.duty_slider)
+    def _duty(self) -> tuple:
+        def header():
+            hbox = main_widgets.HBox()
+            header_label = self._header_label("Duty")
+            self._duty_value_label = self._value_label("0 %")
+            hbox.addWidgets((header_label, self._duty_value_label))
+            return hbox
 
-    def _temp(self):
-        hbox = main_widgets.HBox()
-        header_label = main_widgets.Label(text="Temperature", font_size=15)
-        self.temp_value_label = self._value_label("0 °C",)
-        hbox.addWidgets((header_label, self.temp_value_label))
-        self.temp_slider = main_widgets.Slider(
-            to_connect=self.temp_slider_changed,
+        self._duty_slider = main_widgets.Slider(
+            to_connect=self._duty_slider_changed,
         )
-        self.profile_editor.signals.mode_connect((
-            header_label, self.temp_value_label, self.temp_slider
-        ))
-        return (hbox, self.temp_slider)
+        return (header(), self._duty_slider)
+
+    def _temp(self) -> tuple:
+        def header():
+            hbox = main_widgets.HBox()
+            header_label = self._header_label("Temperature")
+            self._temp_value_label = self._value_label("0 °C")
+            hbox.addWidgets((header_label, self._temp_value_label))
+            return hbox
+
+        self._temp_slider = main_widgets.Slider(
+            to_connect=self._temp_slider_changed,
+        )
+        header_layout = header()
+        self.profile_handler.signals.mode_connect(layout=header_layout)
+        self.profile_handler.signals.mode_connect(witems=self._temp_slider)
+        return header_layout, self._temp_slider
+
+    def _header_label(self, text):
+        return main_widgets.Label(text, font_size=15)
 
     def _value_label(self, text):
         return main_widgets.Label(
-            text=text,
-            aligment=QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter
+            text=text, alignment=QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter
         )
 
+    @QtCore.Slot(int)
+    def _temp_slider_changed(self, value):
+        """When a user moves the temperature slider"""
+        self._temp_value_label.setText(f"{value} °C")
+
+    @QtCore.Slot(int)
+    def _duty_slider_changed(self, value):
+        """When a user moves the duty slider"""
+        self._duty_value_label.setText(f"{value} %")
+
     def get_values(self):
-        """Returns values from both sliders (temp. and duty)"""
-        duty = self.duty_slider.value()
-        temp = self.temp_slider.value()
-        return temp, duty
+        return self._temp_slider.value(), self._duty_slider.value()
 
-    @QtCore.pyqtSlot(int, int)
-    def set_values(self, temp, duty):
-        self.temp_slider.setValue(temp)
-        self.duty_slider.setValue(duty)
+    @QtCore.Slot(int, int)
+    def set_values(self, temp=None, duty=None):
+        if temp is not None:
+            self._temp_slider.setValue(temp)
+        if duty is not None:
+            self._duty_slider.setValue(duty)
 
-    @QtCore.pyqtSlot(int)
-    def duty_slider_changed(self, value):
-        self.duty_value_label.setText(f"{value} %")
-        self.sliders_changed["duty"] = True
-
-    @QtCore.pyqtSlot(int)
-    def temp_slider_changed(self, value):
-        self.temp_value_label.setText(f"{value} °C")
-        self.sliders_changed["temperature"] = True
+    @QtCore.Slot(dict)
+    def set_settings(self, profile_settings):
+        static_duty = profile_settings.get("static_duty")
+        if static_duty is not None:
+            self.set_values(duty=static_duty)
 
 
 class ProfileCtrl(main_widgets.VBox):
-    """Remove, reload, reset a profile"""
-    __slots__ = ("profile_editor",)
-
-    def __init__(self, prof_editor_obj):
+    def __init__(self, profile_handler):
         super().__init__()
-        self.profile_editor = prof_editor_obj
+        self.profile_handler = profile_handler
         self._layout()
 
     def _layout(self):
         self.addWidget(
             main_widgets.Label(
-                text="Profile Control",
-                font_size=17
+                "Profile Control",
+                alignment=QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter,
+                font_size=17,
             )
         )
-        self.addItem(self._ctrl_btns_layout())
+        self.addSpacerItem(
+            main_widgets.Spacer(v_pol=QtWidgets.QSizePolicy.Fixed, height=5)
+        )
+        self.addItem(self._btn_layout())
 
-    def _ctrl_btns_layout(self):
+    def _btn_layout(self):
         hbox = main_widgets.HBox()
-        witem_adder = WidgetAdder(self, hbox).witem_adder
-        witem_adder(
-            "save_btn",
+        hbox.addWidget(
             main_widgets.Button(
                 text="Save",
-                to_connect=self.save_profile,
+                to_connect=self.profile_handler.save_profile_signal.emit,
                 color=(0, 255, 0),
-                tooltip="Save current settings to a profile."
+                tooltip="Save current settings to a profile.",
             )
         )
-        witem_adder(
-            "reset_btn",
+        hbox.addWidget(
             main_widgets.Button(
-                text="Reset",
-                to_connect=self.reset_profile,
+                text="Reload",
+                to_connect=self.profile_handler.reload_profile,
                 color=(255, 80, 0),
                 disabled_color=(127, 40, 0),
                 enabled=False,
-                tooltip="Reset settings and reload currently selected profile."
+                tooltip="Reload currently selected profile",
             )
         )
-        witem_adder(
-            "delete_btn",
+        hbox.addWidget(
             main_widgets.Button(
                 text="Delete",
-                to_connect=self.delete_profile,
+                # to_connect=self.profile_handler.delete_profile_signal.emit,
                 color=(255, 0, 0),
                 disabled_color=(127, 0, 0),
                 enabled=False,
-                tooltip="Delete currently selected profile."
+                tooltip="Delete currently selected profile.",
             )
         )
         return hbox
-
-    @QtCore.pyqtSlot()
-    def save_profile(self):
-        raise NotImplementedError
-
-    @QtCore.pyqtSlot()
-    def reset_profile(self):
-        raise NotImplementedError
-
-    @QtCore.pyqtSlot()
-    def delete_profile(self):
-        raise NotImplementedError

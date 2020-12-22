@@ -1,9 +1,9 @@
 from liquidctl.driver import find_liquidctl_devices
-from liquidctl_api import fake_devices
 
 
 class LiquidctlApi:
     """Simple "API" for accessing devices"""
+
     __slots__ = ("devices", "devices_list", "devices_dict")
 
     def __init__(self):
@@ -11,25 +11,7 @@ class LiquidctlApi:
         self.devices_dict = self._devices_dict()
 
     def _devices_list(self):
-        devices = list(find_liquidctl_devices())
-        # fake devices
-        devices.append(
-            fake_devices.FanDevice(
-                [
-                    "Fake-Device-1",
-                    "fake-address-1",
-                ]
-            )
-        )
-        devices.append(
-            fake_devices.FanDevice(
-                [
-                    "Fake-Device-2",
-                    "fake-address-2",
-                ]
-            )
-        )
-        return devices
+        return list(find_liquidctl_devices())
 
     def _devices_dict(self):
         self._initialize_connect()
@@ -64,8 +46,8 @@ class LiquidctlApi:
     def get_devices(self, dev_id: str = None, dev_index: int = None):
         if dev_id:
             return [
-                value[1] for value in self.devices_dict.values()
-                if value[0] == dev_id
+                value[1] for value in self.devices_dict.values() if
+                value[0] == dev_id
             ]
 
         if dev_index is not None:
@@ -88,9 +70,7 @@ class LiquidctlApi:
                 curr_hw, mode = line[0:2]
                 dev_hw_info[curr_hw] = {}
                 dev_hw_info[curr_hw]["Mode"] = {
-                    "value": mode,
-                    "measurement": ""
-                }
+                    "value": mode, "measurement": ""}
                 continue
             if (
                 curr_hw in line[0] and "Fan" in curr_hw

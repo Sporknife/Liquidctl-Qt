@@ -1,0 +1,2 @@
+class UnexpectedBehaviour(Exception):
+    pass
