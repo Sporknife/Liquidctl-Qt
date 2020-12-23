@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from PySide6 import QtWidgets
+from PyQt5 import QtWidgets
 from window import MainWindow
 import sys
 

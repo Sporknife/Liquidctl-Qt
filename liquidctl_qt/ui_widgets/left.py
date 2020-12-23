@@ -1,4 +1,4 @@
-from PySide6 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from ui_widgets import main_widgets
 import utils
 
@@ -56,7 +56,7 @@ class DeviceInfo(QtWidgets.QGridLayout):
             info = info.decode()
         return main_widgets.Label(text=str(info))
 
-    @QtCore.Slot(dict)
+    @QtCore.pyqtSlot(dict)
     def update_info_labels(self, info_dict):
         """updates labels when selected device is changed"""
         for i, labels_text in enumerate(info_dict.get("device_info")):

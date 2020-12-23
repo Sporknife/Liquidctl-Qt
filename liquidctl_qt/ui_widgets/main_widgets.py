@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 
 class Button(QtWidgets.QPushButton):
@@ -130,7 +130,7 @@ class DecisionDialog(Dialog):
         buttons_box.rejected.connect(self.reject)
         return buttons_box
 
-    @QtCore.Slot(QtGui.QCloseEvent)
+    @QtCore.pyqtSlot(QtGui.QCloseEvent)
     def closeEvent(self, close_event):  # pylint: disable=invalid-name
         close_event.reject()
 

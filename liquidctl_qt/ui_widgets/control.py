@@ -1,4 +1,4 @@
-from PySide6 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from ui_widgets import main_widgets, profile_editor
 
 
@@ -20,7 +20,7 @@ class FanWidget(main_widgets.HardwareWidget):
         self.name = fan_name
         update_signal.connect(self.on_update)
 
-    @QtCore.Slot(dict)
+    @QtCore.pyqtSlot(dict)
     def on_update(self, dev_hw_info):
         hw_info = dev_hw_info.get(self.name)
         if hw_info:

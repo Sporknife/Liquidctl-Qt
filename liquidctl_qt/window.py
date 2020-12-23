@@ -1,4 +1,4 @@
-from PySide6 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from ui_widgets import (
     main_widgets,
     left,
@@ -12,13 +12,13 @@ class Handler(QtCore.QObject):
     # __slots__ = ("window",)
 
     # when user selects another device
-    device_changed_signal = QtCore.Signal(dict)
+    device_changed_signal = QtCore.pyqtSignal(dict)
 
     def __init__(self, window):
         super().__init__()
         self.window = window
 
-    @QtCore.Slot(int)
+    @QtCore.pyqtSlot(int)
     def on_device_changed(self, new_dev_index):
         self.window.info.dev_info_updater.stop()
         self.window.info.current_dev_index = new_dev_index

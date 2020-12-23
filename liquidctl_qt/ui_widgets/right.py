@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore
 from ui_widgets import main_widgets, control
 
 
@@ -37,7 +37,7 @@ class Stack(QtWidgets.QFrame):
         for _ in self.info.DEVICES_LIST:
             self.stacked_widget.addWidget(StackPage(self.info))
 
-    @QtCore.Slot(dict)
+    @QtCore.pyqtSlot(dict)
     def set_page(self, info_dict):
         self.stacked_widget.setCurrentIndex(
             info_dict.get("device_index")
@@ -45,9 +45,9 @@ class Stack(QtWidgets.QFrame):
 
 
 class StackPage(QtWidgets.QScrollArea):
-    update_dev_hw_signal = QtCore.Signal(dict)
-    add_widgets_signal = QtCore.Signal(dict)
-    insert_widget_signal = QtCore.Signal(str, dict)
+    update_dev_hw_signal = QtCore.pyqtSignal(dict)
+    add_widgets_signal = QtCore.pyqtSignal(dict)
+    insert_widget_signal = QtCore.pyqtSignal(str, dict)
 
     def __init__(self, info):
         super().__init__()
@@ -75,7 +75,7 @@ class StackPage(QtWidgets.QScrollArea):
         widget.setLayout(self._vbox)
         self.setWidget(widget)
 
-    @QtCore.Slot(dict)
+    @QtCore.pyqtSlot(dict)
     def add_widgets(self, dev_hw_info):
         for hw_name in dev_hw_info.keys():
             if "Fan" in hw_name:
@@ -89,7 +89,7 @@ class StackPage(QtWidgets.QScrollArea):
             main_widgets.Spacer(v_pol=QtWidgets.QSizePolicy.Expanding)
         )
 
-    @QtCore.Slot(str, dict)
+    @QtCore.pyqtSlot(str, dict)
     def insert_widget(self, hw_name, hw_info):
         if "Fan" in hw_name:
             self._vbox.insertWidget(

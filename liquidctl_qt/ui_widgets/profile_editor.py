@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore
 from ui_widgets import main_widgets, profile_widgets
 import pandas as pd
 import numpy as np
@@ -39,8 +39,8 @@ class Signals:
 
 class ProfileEditor(QtWidgets.QWidget):
     """Main widget for profile editor"""
-    hide_dialog_signal = QtCore.Signal()
-    show_dialog_signal = QtCore.Signal()
+    hide_dialog_signal = QtCore.pyqtSignal()
+    show_dialog_signal = QtCore.pyqtSignal()
 
     # __slots__ = ("device_dict", "profile_handler", "signals")
 
@@ -105,20 +105,20 @@ class ProfileHandler(QtCore.QObject):
     """Used for main events like when a profile is saved, deleted, reloaded"""
 
     """Steps signals"""
-    add_step_signal = QtCore.Signal()  # add a step
-    update_step_signal = QtCore.Signal()  # update current step
-    remove_step_signal = QtCore.Signal()  # remove step
+    add_step_signal = QtCore.pyqtSignal()  # add a step
+    update_step_signal = QtCore.pyqtSignal()  # update current step
+    remove_step_signal = QtCore.pyqtSignal()  # remove step
     """Sliders signals"""
-    set_sliders_value_signal = QtCore.Signal(int, int)
+    set_sliders_value_signal = QtCore.pyqtSignal(int, int)
     """Profile signals"""
     # contains data about newly selected profile (if its static profile, etc.)
-    load_profile_signal = QtCore.Signal(dict)  # when profile is switched
-    mode_changed_signal = QtCore.Signal(bool)  # when static mode is changed
-    delete_profile_signal = QtCore.Signal()  # remove current profile
-    save_profile_signal = QtCore.Signal()
+    load_profile_signal = QtCore.pyqtSignal(dict)  # when profile is switched
+    mode_changed_signal = QtCore.pyqtSignal(bool)  # when static mode is changed
+    delete_profile_signal = QtCore.pyqtSignal()  # remove current profile
+    save_profile_signal = QtCore.pyqtSignal()
     # apply settings, reload the graph
-    reload_graph_signal = QtCore.Signal()
-    apply_settings_signal = QtCore.Signal()
+    reload_graph_signal = QtCore.pyqtSignal()
+    apply_settings_signal = QtCore.pyqtSignal()
 
     def __init__(self, profile_editor):
         super().__init__()
@@ -133,7 +133,7 @@ class ProfileHandler(QtCore.QObject):
         self.apply_settings_signal.connect(self.apply_settings)
         self.reload_graph_signal.connect(self.reload_graph)
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def save_profile(self):
         """
         Saves profile settings
@@ -173,18 +173,18 @@ class ProfileHandler(QtCore.QObject):
             )
         self.profile_editor.show_dialog_signal.emit()
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def reload_profile(self):  # fixme: test me
         profile_name = (
             self.profile_editor.profile_mode_chooser.curr_profile_name
         )
         self.load_profile(profile_name)
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def delete_profile(self):  # fixme: test me
         self.profile_editor.profile_mode_chooser.remove_curr_profile()
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def load_profile(self, profile_name):
         static_mode = False
         profile_settings = self.profiles.duty_profiles.load_profile(
@@ -213,7 +213,7 @@ class ProfileHandler(QtCore.QObject):
                 "data_frame": str_df,
             }
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def apply_settings(self):
         device_obj = self.profile_editor.device_dict.get("device_obj")
         hw_name = self.profile_editor.objectName()
@@ -246,7 +246,7 @@ class ProfileHandler(QtCore.QObject):
                     DIALOG_MSG="Your device does not support profiles."
                 ).exec_()
 
-    QtCore.Slot()
+    QtCore.pyqtSlot()
     def reload_graph(self):
         pass
 
@@ -315,15 +315,15 @@ class ProfileModeChooser(main_widgets.HBox):
         self.addItem(profile_name)
         self.setActivated(-1)
 
-    @QtCore.Slot(int)
+    @QtCore.pyqtSlot(int)
     def change_profile(self, *args):  # pylint: disable=unused-argument
         self.profile_handler.load_profile(self.curr_profile_name)
 
-    @QtCore.Slot(bool)
+    @QtCore.pyqtSlot(bool)
     def change_mode(self, mode):
         self.profile_handler.mode_changed_signal.emit(not bool(mode))
 
-    @QtCore.Slot(dict)
+    @QtCore.pyqtSlot(dict)
     def set_settings(self, profile_settings):
         static_mode = False
         if profile_settings.get("static_duty") is not None:
@@ -379,12 +379,12 @@ class StepsViewEditor(QtWidgets.QTableView):
         self.setModel(model)
         self.model().removeRow(0)
 
-    @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
+    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
     # pylint: disable=invalid-name, unused-argument
     def currentChanged(self, *args):
         self.update_sliders()
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def add_step(self):
         """Inserts step accordingly to temperature"""
         temp, duty, df_new = self.get_info()
@@ -408,7 +408,7 @@ class StepsViewEditor(QtWidgets.QTableView):
             self.model().addRow(iloc_for_row, df_new)  # adds the new row
             self.selectRow(iloc_for_row)  # sets active row
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def update_step(self):
         """
         Updates currently selected step to values specified in sliders
@@ -455,7 +455,7 @@ class StepsViewEditor(QtWidgets.QTableView):
             else:
                 raise Exception("Something is wrong !")
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def remove_step(self):
         """Removes currently selected step"""
         if self.currentIndex().isValid():
@@ -492,7 +492,7 @@ class StepsViewEditor(QtWidgets.QTableView):
             self.model().df
         )
 
-    @QtCore.Slot(dict)
+    @QtCore.pyqtSlot(dict)
     def set_settings(self, profile_settings):
         if profile_settings.get("static_duty") is not None:
             model = TempDutyModel(
@@ -709,12 +709,12 @@ class ControlSliders(main_widgets.VBox):
             text=text, alignment=QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter
         )
 
-    @QtCore.Slot(int)
+    @QtCore.pyqtSlot(int)
     def _temp_slider_changed(self, value):
         """When a user moves the temperature slider"""
         self._temp_value_label.setText(f"{value} °C")
 
-    @QtCore.Slot(int)
+    @QtCore.pyqtSlot(int)
     def _duty_slider_changed(self, value):
         """When a user moves the duty slider"""
         self._duty_value_label.setText(f"{value} %")
@@ -722,14 +722,14 @@ class ControlSliders(main_widgets.VBox):
     def get_values(self):
         return self._temp_slider.value(), self._duty_slider.value()
 
-    @QtCore.Slot(int, int)
+    @QtCore.pyqtSlot(int, int)
     def set_values(self, temp=None, duty=None):
         if temp is not None:
             self._temp_slider.setValue(temp)
         if duty is not None:
             self._duty_slider.setValue(duty)
 
-    @QtCore.Slot(dict)
+    @QtCore.pyqtSlot(dict)
     def set_settings(self, profile_settings):
         static_duty = profile_settings.get("static_duty")
         if static_duty is not None:

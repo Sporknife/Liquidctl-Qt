@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore
 from ui_widgets import main_widgets
 import string
 
