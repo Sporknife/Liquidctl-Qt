@@ -148,9 +148,10 @@ class ProfileHandler(QtCore.QObject):
             "data_frame": pd.DataFrame, # DataFrame object ELSE None
         }
         """
-        name_dialog = profile_widgets.ProfileNameDialog(
-            main_dialog=self.profile_editor.main_dialog)
         self.profile_editor.hide_dialog_signal.emit()
+        name_dialog = profile_widgets.ProfileNameDialog(
+            main_dialog=self.profile_editor.main_dialog
+        )
         if name_dialog.exec_():
             profile_name = name_dialog.name
             profile_name_exists = bool(
@@ -161,7 +162,9 @@ class ProfileHandler(QtCore.QObject):
 
             if profile_name_exists and not (
                 main_widgets.DecisionDialog(
-                    self.profile_editor.main_dialog, DIALOG_MSG).exec_()
+                    self.profile_editor.main_dialog,
+                    DIALOG_MSG
+                ).exec_()
             ):
                 # if user selects to not override, it doesn't continue
                 return
@@ -214,7 +217,9 @@ class ProfileHandler(QtCore.QObject):
     def apply_settings(self):
         device_obj = self.profile_editor.device_dict.get("device_obj")
         hw_name = self.profile_editor.objectName()
+        profile_df = self.profile_editor.steps_editor.model().df
 
+        # static duty
         if self.profile_editor.profile_mode_chooser.current_mode:
             _, duty = self.profile_editor.control_sliders.get_values()
             self.profiles.duty_profiles.set_duty(
@@ -222,12 +227,18 @@ class ProfileHandler(QtCore.QObject):
                 hw_name,
                 static_duty=duty
             )
-        else:
+        elif profile_df.empty:  # profile is empty
+            profile_widgets.MsgDialog(
+                parent=self.profile_editor.main_dialog,
+                DIALOG_MSG="Profile is empty !"
+            ).exec_()
+
+        else:  # when the profile is not empty
             try:
                 self.profiles.duty_profiles.set_duty(
                     device_obj,
                     hw_name,
-                    profile_df=self.profile_editor.steps_editor.model().df
+                    profile_df=profile_df
                 )
             except NotSupportedByDevice:
                 profile_widgets.MsgDialog(
@@ -240,13 +251,12 @@ class ProfileHandler(QtCore.QObject):
         pass
 
     def decision_dialog(self, DIALOG_MSG):  # pylint: disable=invalid-name
-        # self.profile_editor.hide_dialog_signal.emit()
+        self.profile_editor.hide_dialog_signal.emit()
         output = main_widgets.DecisionDialog(
             self.profile_editor.main_dialog,
             DIALOG_MSG,
-            fixed_size=True
         ).exec_()
-        # self.profile_editor.show_dialog_signal.emit()
+        self.profile_editor.show_dialog_signal.emit()
         return output
 
 
@@ -344,6 +354,10 @@ class StepsViewEditor(QtWidgets.QTableView):
 
     def _set_properties(self):
         """Sets widget properties"""
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Expanding,
+        )
         self.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.setAlternatingRowColors(True)
         self.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)

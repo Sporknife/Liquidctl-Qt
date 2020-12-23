@@ -107,7 +107,7 @@ class StackPage(QtWidgets.QScrollArea):
         }
 
         def dialog(): return control.ProfileEditorDialog(
-            fan_name, device_dict
+            fan_name, device_dict, self.info.window
         ).exec_()
         return control.FanWidget(
             fan_name=fan_name,

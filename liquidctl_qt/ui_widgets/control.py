@@ -28,8 +28,8 @@ class FanWidget(main_widgets.HardwareWidget):
 
 
 class ProfileEditorDialog(QtWidgets.QDialog):
-    def __init__(self, name: str, curr_dev_dict: dict):
-        super().__init__()
+    def __init__(self, name: str, curr_dev_dict: dict, main_window):
+        super().__init__(parent=main_window)
         self.setModal(True)
         self.setWindowTitle(name)
         self.setLayout(self._layout(name, curr_dev_dict))
