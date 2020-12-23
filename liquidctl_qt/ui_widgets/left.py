@@ -20,7 +20,7 @@ class DeviceSelector(main_widgets.ComboBox):
 class DeviceInfo(QtWidgets.QGridLayout):
     """Basic info about the currently selected device"""
 
-    # __slots__ = ("info",)
+    __slots__ = ("info",)
 
     def __init__(self, info):
         super().__init__()
@@ -72,7 +72,7 @@ class DeviceInfo(QtWidgets.QGridLayout):
 
 
 class MainLeft(QtWidgets.QWidget):
-    # __slots__ = ("info",)
+    __slots__ = ("info",)
 
     def __init__(self, info):
         super().__init__()

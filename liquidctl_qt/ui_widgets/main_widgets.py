@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 
 class Button(QtWidgets.QPushButton):
-    # __slots__ = ("enabled_style",)  # fixme: __slots__ cause a crash
+    __slots__ = ("enabled_style",)
 
     def __init__(
         self,
@@ -141,7 +141,7 @@ class HardwareWidget(QtWidgets.QFrame):
     and allows to change some settings
     """
 
-    # __slots__ = ("hw_info_obj",)  # fixme: __slots__ cause a crash
+    __slots__ = ("hw_info_obj",)
 
     def __init__(
         self,

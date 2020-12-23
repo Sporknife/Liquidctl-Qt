@@ -10,7 +10,7 @@ from liquidctl.error import NotSupportedByDevice
 class Signals:
     """Connect signals to slots, add widgets to layout"""
 
-    # __slots__ = ("mode_signal", "reset_signal")
+    __slots__ = ("mode_signal", "reset_signal")
 
     def __init__(self, mode_signal):
         self.mode_signal = mode_signal
@@ -42,7 +42,7 @@ class ProfileEditor(QtWidgets.QWidget):
     hide_dialog_signal = QtCore.pyqtSignal()
     show_dialog_signal = QtCore.pyqtSignal()
 
-    # __slots__ = ("device_dict", "profile_handler", "signals")
+    __slots__ = ("device_dict", "profile_handler", "signals")
 
     def __init__(self, main_dialog, name, device_dict: dict):
         super().__init__()
@@ -263,7 +263,7 @@ class ProfileHandler(QtCore.QObject):
 class ProfileModeChooser(main_widgets.HBox):
     """Profile and its mode (static duty or not)"""
 
-    # __slots__ = ("profile_handler",)
+    __slots__ = ("profile_handler",)
 
     def __init__(self, profile_handler):
         super().__init__()
@@ -319,7 +319,7 @@ class ProfileModeChooser(main_widgets.HBox):
     def change_profile(self, *args):  # pylint: disable=unused-argument
         self.profile_handler.load_profile(self.curr_profile_name)
 
-    @QtCore.pyqtSlot(bool)
+    @QtCore.pyqtSlot(int)
     def change_mode(self, mode):
         self.profile_handler.mode_changed_signal.emit(not bool(mode))
 
@@ -334,7 +334,7 @@ class ProfileModeChooser(main_widgets.HBox):
 class StepsViewEditor(QtWidgets.QTableView):
     """Allows you to view and add/update/remove steps"""
 
-    # __slots__ = ("profile_editor", "profile_handler")
+    __slots__ = ("profile_editor", "profile_handler")
 
     def __init__(self, profile_editor):
         super().__init__()
@@ -516,7 +516,7 @@ class TempDutyModel(QtCore.QAbstractTableModel):
     Model that is using pandas.DataFrame
     """
 
-    # __slots__ = ("df",)
+    __slots__ = ("df",)
 
     def __init__(self, df):
         super().__init__()

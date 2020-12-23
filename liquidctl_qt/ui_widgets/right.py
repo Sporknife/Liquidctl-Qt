@@ -120,7 +120,7 @@ class StackPage(QtWidgets.QScrollArea):
 
 class MainRight(QtWidgets.QWidget):
     """Main class & widget for right side"""
-    # __slots__ = ("info", "stack_frame")
+    __slots__ = ("info", "stack_frame")
 
     def __init__(self, info_obj):
         super().__init__()

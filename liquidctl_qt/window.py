@@ -9,7 +9,7 @@ import threading
 
 
 class Handler(QtCore.QObject):
-    # __slots__ = ("window",)
+    __slots__ = ("window",)
 
     # when user selects another device
     device_changed_signal = QtCore.pyqtSignal(dict)
@@ -32,7 +32,7 @@ class Handler(QtCore.QObject):
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    # __slots__ = ("handler", "info")
+    __slots__ = ("handler", "info")
 
     def __init__(self):
         super().__init__()
@@ -68,6 +68,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 class Info:
+    __slots__ = ("window", "liquidctl_api", "DEVICES_LIST", "control_device_widgets", "current_dev_index", "main_handler", "dev_info_updater", "main_left", "main_right", "dev_info_updater")
     def __init__(self, window):
         self.window = window
         self._init()
@@ -127,7 +128,7 @@ class Info:
 
 
 class HwInfoUpdater:
-    # __slots__ = ("info", "main_handler", "pause", "do_update", "curr_active")
+    __slots__ = ("info", "main_handler", "pause", "do_update", "curr_active")
     """Updater, creates hw widgets"""
 
     def __init__(self, info, pause):

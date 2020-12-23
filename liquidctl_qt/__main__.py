@@ -4,13 +4,12 @@ from PyQt5 import QtWidgets
 from window import MainWindow
 import sys
 
-to_print = """
+print("""
 If you need ANY help or if you would report an issue use:
 - The github page:\t\t https://github.com/Sporknife/Liquidctl-Qt
 - Liquidctl's GitHub page:\t https://github.com/liquidctl/liquidctl
 - Discord server:\t\t https://discord.gg/D4tegR
-"""
-print(to_print)
+""")
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
