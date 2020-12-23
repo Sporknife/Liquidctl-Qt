@@ -109,10 +109,12 @@ class Info:
 
     @property
     def current_device_info(self):
-        return [
-            list(info)
-            for info in self.current_device_obj.device.hidinfo.items()
-        ][:4]
+        return {
+            "vendor_id": self.current_device_obj.vendor_id,
+            "product_id": self.current_device_obj.product_id,
+            "address": self.current_device_obj.address,
+            "bus": self.current_device_obj.bus
+        }
 
     @property
     def profile_device_info(self):

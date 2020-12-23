@@ -33,18 +33,20 @@ class DeviceInfo(QtWidgets.QGridLayout):
             main_widgets.Spacer(
                 h_pol=QtWidgets.QSizePolicy.Fixed,
                 height=0
-            ),
-            0,
-            1,
+            ), 0, 1,
         )
         self.info.main_handler.device_changed_signal.connect(
             self.update_info_labels)
 
     def _add_labels(self):
-        for i, info in enumerate(self.info.current_device_info):
-            type_label = main_widgets.Label(text=self._clean_text(info[0]))
-            self.addWidget(type_label, i, 0)
-            self.addWidget(self._value_label(info[1]), i, 3)
+        for i, (name, value) in enumerate(self.info.current_device_info.items()):
+            # example: - name: vendor_id, value: 7793
+            # type_label = 
+            self.addWidget(
+                main_widgets.Label(text=self._clean_text(name)),
+                i, 0
+            )
+            self.addWidget(self._value_label(value), i, 3)
 
     def _clean_text(self, text) -> str:
         """removes certains things from string"""
