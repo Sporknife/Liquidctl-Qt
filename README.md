@@ -8,19 +8,19 @@
 * [ ] Backend
 	- [x] Simple liquidctl api for the application
 	- [ ] Legacy devices
-	- [ ] Utils (making it save & load profiles properly)
+	- [x] Utils (making it save & load profiles properly)
 
 * [ ] Complete widgets
 	- [x] Main window
 	- [x] Fan widget (those that are in the list)
 		- [x] The one in the list with information
-		* [ ] Fan profile changer/editor
+		* [x] Fan profile changer/editor
 			- [x] Dialog
-			* [ ] Widget
+			* [x] Widget
 				- [x] ProfileModeChooser - choose profile and mode (static/profile)
 				- [x] Steps viewer (QTableView) - view steps ordered by temp.
 				- [x] Step editor - add/edit/delete a step in steps viewer
-				- [ ] Profile controls - save/delete or reset settings (reset settings to current profile)
+				- [x] Profile controls - save/delete or reset settings (reset settings to current profile)
 	- [ ] Led widget
 
 * [ ] App working
