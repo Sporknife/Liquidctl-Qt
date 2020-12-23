@@ -30,7 +30,7 @@
 ## Dependencies
 * [Liquidctl](https://github.com/jonasmalacofilho/liquidctl) (and it's dependencies)
 * Python3
-* Python packages
+* Python packages (if your on Linux try installing them via the package manager) 
 	- [PySide6](https://pypi.org/project/PyQt5/) and its dependencies
 
 ## App usage
