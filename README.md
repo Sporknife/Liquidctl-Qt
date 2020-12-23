@@ -31,8 +31,7 @@
 * [Liquidctl](https://github.com/jonasmalacofilho/liquidctl) (and it's dependencies)
 * Python3
 * Python packages
-	- [PyQt5](https://pypi.org/project/PyQt5/)
-	- [notify-send](https://pypi.org/project/notify-send/)
+	- [PySide6](https://pypi.org/project/PyQt5/) and its dependencies
 
 ## App usage
 ### Profile naming rules
