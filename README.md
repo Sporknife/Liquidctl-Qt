@@ -6,10 +6,11 @@
 - Feel free to add (led, fan) controllers keys to [this](https://github.com/Sporknife/Liquidctl-Qt/blob/master/devices_info/controllers.json) file. Template for (led, fan) controllers [here](https://github.com/Sporknife/Liquidctl-Qt/blob/master/devices.md#fanled-controllers). 
 
 ## Dependencies
-* [Liquidctl](https://github.com/jonasmalacofilho/liquidctl) (and it's dependencies)
-* Python3
-* Python packages (if your on Linux try installing them via the package manager) 
-	- [PyQt5](https://pypi.org/project/PyQt5/)
+- I linked ArchLinux packages because i had problems with installing them with python package manager (pip).
+* [Liquidctl](https://github.com/jonasmalacofilho/liquidctl) (and it's dependencies), -[ArchLinux package](https://archlinux.org/packages/community/any/liquidctl/).
+* [Python3](https://www.python.org/), -[ArchLinux package](https://archlinux.org/packages/extra/x86_64/python/)
+* Python packages (if your on Linux try installing them with the distro package manager) 
+	- [PyQt5](https://pypi.org/project/PyQt5/), -[ArchLinux package](https://archlinux.org/packages/extra/x86_64/python-pyqt5/).
 
 ## App usage
 - Describes how the app works and how you can use it.
