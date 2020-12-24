@@ -3,7 +3,8 @@
 
 ## Current state
 - Rewriting the entire backend which will in turn make the app more stable and easier to use.
-- Feel free to add (led, fan) controllers keys to [this](https://github.com/Sporknife/Liquidctl-Qt/blob/master/devices_info/controllers.json) file. Template for (led, fan) controllers [here](https://github.com/Sporknife/Liquidctl-Qt/blob/master/devices.md#fanled-controllers). 
+- Feel free to add (led, fan) controllers keys to [this](https://github.com/Sporknife/Liquidctl-Qt/blob/master/devices_info/controllers.json) file.
+- Device info templates can be found [here](https://github.com/Sporknife/Liquidctl-Qt/blob/master/devices.md)
 
 ## Dependencies
 - I linked ArchLinux packages because i had problems with installing them with python package manager (pip).
