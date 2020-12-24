@@ -2,7 +2,7 @@
 **A Qt GUI for [liquidctl](https://github.com/jonasmalacofilho/liquidctl).**
 
 ## Current state
-- Rewriting the entire backend.
+- Rewriting the entire backend which will in turn make the app more stable and easier to use.
 - Feel free to add (led, fan) controllers keys to [this](https://github.com/Sporknife/Liquidctl-Qt/blob/master/devices_info/controllers.json) file. Template for (led, fan) controllers [here](https://github.com/Sporknife/Liquidctl-Qt/blob/master/devices.md#fanled-controllers). 
 
 ## Dependencies
